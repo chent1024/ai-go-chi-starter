@@ -32,26 +32,41 @@ openapi/                API 契约
 2. 使用以下命令启动 PostgreSQL：
 
 ```bash
-docker compose -f deploy/docker-compose.dev.yaml --env-file deploy/.env.dev.example up -d
+make dev-up
 ```
 
 3. 执行 migration：
 
 ```bash
-go run ./cmd/migrate
+make migrate
 ```
 
 4. 启动 API：
 
 ```bash
-go run ./cmd/api
+make run-api
 ```
 
 5. 启动 worker：
 
 ```bash
-go run ./cmd/worker
+make run-worker
 ```
+
+## 常用入口
+
+- `make build`
+- `make build-api`
+- `make build-worker`
+- `make build-migrate`
+- `make run-api`
+- `make run-worker`
+- `make migrate`
+- `make migrate-version`
+- `make dev-up`
+- `make dev-down`
+- `make dev-logs`
+- `make dev-ps`
 
 ## 验证
 

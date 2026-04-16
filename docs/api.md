@@ -15,6 +15,8 @@ Every JSON response uses the same envelope:
 
 Errors add `retryable`.
 
+Reserved cross-cutting codes are documented in [docs/errors.md](/Users/xihe0000/workspace/code/ai-go-chi-starter/docs/errors.md).
+
 ## Routes
 
 | Method | Path | Purpose |
@@ -24,6 +26,13 @@ Errors add `retryable`.
 | `POST` | `/v1/examples` | Create an example. |
 | `GET` | `/v1/examples/{id}` | Fetch a single example. |
 | `GET` | `/v1/examples` | List examples. |
+
+## Cross-Cutting Behavior
+
+- every request gets `X-Request-Id` and `Traceparent`
+- every request is subject to a server-side request timeout
+- timeout responses return `504` with envelope code `REQUEST_TIMEOUT`
+- when shutdown draining starts, new application requests return `503` with envelope code `NOT_READY`
 
 ## Example Resource
 

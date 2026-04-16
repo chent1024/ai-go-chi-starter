@@ -21,7 +21,7 @@ func WriteRequestDomainError(w http.ResponseWriter, req *http.Request, err error
 			w,
 			req,
 			http.StatusInternalServerError,
-			"INTERNAL",
+			shared.CodeInternal,
 			"internal server error",
 			shared.Retryable(err),
 		)
@@ -53,7 +53,7 @@ func WriteDomainError(w http.ResponseWriter, requestID string, err error) {
 			w,
 			http.StatusInternalServerError,
 			requestID,
-			"INTERNAL",
+			shared.CodeInternal,
 			"internal server error",
 			shared.Retryable(err),
 		)

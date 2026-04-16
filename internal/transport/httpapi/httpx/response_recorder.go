@@ -6,6 +6,7 @@ type ResponseRecorder struct {
 	http.ResponseWriter
 	statusCode   int
 	bytesWritten int64
+	written      bool
 }
 
 func NewResponseRecorder(w http.ResponseWriter) *ResponseRecorder {
@@ -17,6 +18,7 @@ func NewResponseRecorder(w http.ResponseWriter) *ResponseRecorder {
 
 func (r *ResponseRecorder) WriteHeader(statusCode int) {
 	r.statusCode = statusCode
+	r.written = true
 	r.ResponseWriter.WriteHeader(statusCode)
 }
 
@@ -24,6 +26,7 @@ func (r *ResponseRecorder) Write(p []byte) (int, error) {
 	if r.statusCode == 0 {
 		r.statusCode = http.StatusOK
 	}
+	r.written = true
 	n, err := r.ResponseWriter.Write(p)
 	r.bytesWritten += int64(n)
 	return n, err
@@ -38,4 +41,8 @@ func (r *ResponseRecorder) StatusCode() int {
 
 func (r *ResponseRecorder) BytesWritten() int64 {
 	return r.bytesWritten
+}
+
+func (r *ResponseRecorder) Written() bool {
+	return r.written
 }

@@ -74,3 +74,4 @@
 - `internal/runtime` 放日志、trace、outbound logging 等横切基础设施
 - 新增 env key 时，只能在 `internal/config/config.go` 读取，并同步 `.env.example`、`deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/config.md`
 - 新增 API 路由或响应字段时，必须同步 `docs/api.md` 和 `openapi/openapi.yaml`
+- 新增或调整保留错误码时，必须同步 `docs/errors.md`

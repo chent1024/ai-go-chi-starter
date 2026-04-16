@@ -15,6 +15,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
+        '504':
+          description: Request timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
   /readyz:
     get:
       summary: Readiness probe
@@ -31,12 +37,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
+        '504':
+          description: Request timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
   /v1/examples:
     get:
       summary: List examples
       responses:
         '200':
           description: Example list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '503':
+          description: Service draining or not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '504':
+          description: Request timeout
           content:
             application/json:
               schema:
@@ -62,6 +86,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
+        '503':
+          description: Service draining or not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '504':
+          description: Request timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
   /v1/examples/{id}:
     get:
       summary: Get example by id
@@ -80,6 +116,18 @@ paths:
                 $ref: '#/components/schemas/Envelope'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '503':
+          description: Service draining or not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '504':
+          description: Request timeout
           content:
             application/json:
               schema:

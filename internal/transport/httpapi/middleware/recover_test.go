@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
@@ -27,7 +28,7 @@ func TestRecoverWritesEnvelope(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&env); err != nil {
 		t.Fatalf("Decode() error = %v", err)
 	}
-	if env.Code != "INTERNAL" || env.RequestID == "" {
+	if env.Code != shared.CodeInternal || env.RequestID == "" {
 		t.Fatalf("unexpected envelope = %+v", env)
 	}
 }

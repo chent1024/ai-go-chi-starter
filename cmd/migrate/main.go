@@ -27,7 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := postgres.Open(context.Background(), cfg.Database.URL)
+	db, err := postgres.Open(context.Background(), cfg.Database)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "open database: %v\n", err)
 		os.Exit(1)
@@ -49,7 +49,14 @@ type Runner struct {
 	migrationsDir string
 }
 
+const migrationLockKey int64 = 2026041601
+
 func (r Runner) Run(ctx context.Context, action string) error {
+	if err := r.acquireLock(ctx); err != nil {
+		return err
+	}
+	defer r.releaseLock(context.Background())
+
 	if err := r.ensureTable(ctx); err != nil {
 		return err
 	}
@@ -65,6 +72,23 @@ func (r Runner) Run(ctx context.Context, action string) error {
 		return nil
 	default:
 		return fmt.Errorf("unsupported action %q", action)
+	}
+}
+
+func (r Runner) acquireLock(ctx context.Context) error {
+	var acquired bool
+	if err := r.db.QueryRowContext(ctx, `SELECT pg_try_advisory_lock($1)`, migrationLockKey).Scan(&acquired); err != nil {
+		return fmt.Errorf("acquire migration advisory lock: %w", err)
+	}
+	if !acquired {
+		return fmt.Errorf("migration advisory lock is already held")
+	}
+	return nil
+}
+
+func (r Runner) releaseLock(ctx context.Context) {
+	if _, err := r.db.ExecContext(ctx, `SELECT pg_advisory_unlock($1)`, migrationLockKey); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "release migration advisory lock: %v\n", err)
 	}
 }
 

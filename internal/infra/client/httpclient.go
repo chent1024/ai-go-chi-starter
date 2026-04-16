@@ -15,20 +15,53 @@ const traceparentHeader = "Traceparent"
 func NewHTTPClient(
 	base *http.Client,
 	logger *slog.Logger,
-	cfg config.LoggingConfig,
+	logCfg config.LoggingConfig,
+	outboundCfg config.OutboundConfig,
 	component string,
 	target string,
 ) *http.Client {
 	if base == nil {
-		base = &http.Client{Timeout: 30 * time.Second}
+		base = &http.Client{}
 	}
 	clone := *base
-	transport := clone.Transport
-	if transport == nil {
-		transport = http.DefaultTransport
-	}
-	clone.Transport = newLoggingRoundTripper(transport, logger, cfg, component, target)
+	clone.Timeout = outboundCfg.Timeout
+	clone.Transport = newLoggingRoundTripper(
+		configureTransport(clone.Transport, outboundCfg),
+		logger,
+		logCfg,
+		component,
+		target,
+	)
 	return &clone
+}
+
+func configureTransport(base http.RoundTripper, cfg config.OutboundConfig) http.RoundTripper {
+	transport, ok := cloneTransport(base)
+	if !ok {
+		return base
+	}
+	transport.MaxIdleConns = cfg.MaxIdleConns
+	transport.MaxIdleConnsPerHost = cfg.MaxIdleConnsPerHost
+	transport.IdleConnTimeout = cfg.IdleConnTimeout
+	transport.TLSHandshakeTimeout = cfg.TLSHandshakeTimeout
+	transport.ResponseHeaderTimeout = cfg.ResponseHeaderTimeout
+	transport.ExpectContinueTimeout = cfg.ExpectContinueTimeout
+	return transport
+}
+
+func cloneTransport(base http.RoundTripper) (*http.Transport, bool) {
+	if base == nil {
+		defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+		if !ok {
+			return nil, false
+		}
+		return defaultTransport.Clone(), true
+	}
+	transport, ok := base.(*http.Transport)
+	if !ok {
+		return nil, false
+	}
+	return transport.Clone(), true
 }
 
 func newLoggingRoundTripper(

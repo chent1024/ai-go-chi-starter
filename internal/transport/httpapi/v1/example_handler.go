@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"ai-go-chi-starter/internal/service/example"
+	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
@@ -45,7 +46,14 @@ func (h *ExampleHandler) WithLogger(logger *slog.Logger) *ExampleHandler {
 
 func (h *ExampleHandler) Create(w http.ResponseWriter, req *http.Request) {
 	if h.service == nil {
-		httpx.WriteRequestError(w, req, http.StatusInternalServerError, "INTERNAL", "service is not configured", false)
+		httpx.WriteRequestError(
+			w,
+			req,
+			http.StatusInternalServerError,
+			shared.CodeInternal,
+			"service is not configured",
+			false,
+		)
 		return
 	}
 	var body createExampleRequest
@@ -63,7 +71,14 @@ func (h *ExampleHandler) Create(w http.ResponseWriter, req *http.Request) {
 
 func (h *ExampleHandler) Get(w http.ResponseWriter, req *http.Request) {
 	if h.service == nil {
-		httpx.WriteRequestError(w, req, http.StatusInternalServerError, "INTERNAL", "service is not configured", false)
+		httpx.WriteRequestError(
+			w,
+			req,
+			http.StatusInternalServerError,
+			shared.CodeInternal,
+			"service is not configured",
+			false,
+		)
 		return
 	}
 	item, err := h.service.Get(req.Context(), chi.URLParam(req, "id"))
@@ -76,7 +91,14 @@ func (h *ExampleHandler) Get(w http.ResponseWriter, req *http.Request) {
 
 func (h *ExampleHandler) List(w http.ResponseWriter, req *http.Request) {
 	if h.service == nil {
-		httpx.WriteRequestError(w, req, http.StatusInternalServerError, "INTERNAL", "service is not configured", false)
+		httpx.WriteRequestError(
+			w,
+			req,
+			http.StatusInternalServerError,
+			shared.CodeInternal,
+			"service is not configured",
+			false,
+		)
 		return
 	}
 	items, err := h.service.List(req.Context())

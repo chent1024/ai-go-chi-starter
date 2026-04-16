@@ -15,16 +15,26 @@ type Config struct {
 	API      APIConfig
 	Worker   WorkerConfig
 	Logging  LoggingConfig
+	Outbound OutboundConfig
 	Docker   DockerConfig
 }
 
 type DatabaseConfig struct {
-	URL string
+	URL             string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+	ConnMaxIdleTime time.Duration
 }
 
 type APIConfig struct {
 	ListenAddr      string
 	ShutdownTimeout time.Duration
+	ReadTimeout     time.Duration
+	WriteTimeout    time.Duration
+	IdleTimeout     time.Duration
+	RequestTimeout  time.Duration
+	MaxHeaderBytes  int
 }
 
 type WorkerConfig struct {
@@ -48,6 +58,16 @@ type LoggingConfig struct {
 	Location        *time.Location
 }
 
+type OutboundConfig struct {
+	Timeout               time.Duration
+	MaxIdleConns          int
+	MaxIdleConnsPerHost   int
+	IdleConnTimeout       time.Duration
+	TLSHandshakeTimeout   time.Duration
+	ResponseHeaderTimeout time.Duration
+	ExpectContinueTimeout time.Duration
+}
+
 type DockerConfig struct {
 	PostgresHostPort string
 	PostgresDB       string
@@ -59,6 +79,24 @@ func Load() (Config, error) {
 	var parseErrs []error
 
 	apiShutdownTimeout, err := durationFromEnv("APP_API_SHUTDOWN_TIMEOUT", 10*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	apiReadTimeout, err := durationFromEnv("APP_API_READ_TIMEOUT", 15*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	apiWriteTimeout, err := durationFromEnv("APP_API_WRITE_TIMEOUT", 30*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	apiIdleTimeout, err := durationFromEnv("APP_API_IDLE_TIMEOUT", 60*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	apiRequestTimeout, err := durationFromEnv("APP_API_REQUEST_TIMEOUT", 30*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	apiMaxHeaderBytes, err := intFromEnv("APP_API_MAX_HEADER_BYTES", 1<<20)
+	parseErrs = appendErr(parseErrs, err)
+	databaseMaxOpenConns, err := intFromEnv("APP_DATABASE_MAX_OPEN_CONNS", 25)
+	parseErrs = appendErr(parseErrs, err)
+	databaseMaxIdleConns, err := intFromEnv("APP_DATABASE_MAX_IDLE_CONNS", 25)
+	parseErrs = appendErr(parseErrs, err)
+	databaseConnMaxLifetime, err := durationFromEnv("APP_DATABASE_CONN_MAX_LIFETIME", 30*time.Minute)
+	parseErrs = appendErr(parseErrs, err)
+	databaseConnMaxIdleTime, err := durationFromEnv("APP_DATABASE_CONN_MAX_IDLE_TIME", 15*time.Minute)
 	parseErrs = appendErr(parseErrs, err)
 	workerEnabled, err := boolFromEnv("APP_WORKER_ENABLED", true)
 	parseErrs = appendErr(parseErrs, err)
@@ -84,6 +122,20 @@ func Load() (Config, error) {
 	parseErrs = appendErr(parseErrs, err)
 	logCleanupInterval, err := durationFromEnv("APP_LOG_CLEANUP_INTERVAL", time.Hour)
 	parseErrs = appendErr(parseErrs, err)
+	outboundTimeout, err := durationFromEnv("APP_OUTBOUND_TIMEOUT", 30*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	outboundMaxIdleConns, err := intFromEnv("APP_OUTBOUND_MAX_IDLE_CONNS", 100)
+	parseErrs = appendErr(parseErrs, err)
+	outboundMaxIdleConnsPerHost, err := intFromEnv("APP_OUTBOUND_MAX_IDLE_CONNS_PER_HOST", 10)
+	parseErrs = appendErr(parseErrs, err)
+	outboundIdleConnTimeout, err := durationFromEnv("APP_OUTBOUND_IDLE_CONN_TIMEOUT", 90*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	outboundTLSHandshakeTimeout, err := durationFromEnv("APP_OUTBOUND_TLS_HANDSHAKE_TIMEOUT", 10*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	outboundResponseHeaderTimeout, err := durationFromEnv("APP_OUTBOUND_RESPONSE_HEADER_TIMEOUT", 15*time.Second)
+	parseErrs = appendErr(parseErrs, err)
+	outboundExpectContinueTimeout, err := durationFromEnv("APP_OUTBOUND_EXPECT_CONTINUE_TIMEOUT", time.Second)
+	parseErrs = appendErr(parseErrs, err)
 	timezone := stringFromEnv("APP_TIMEZONE", time.UTC.String())
 	location, err := time.LoadLocation(strings.TrimSpace(timezone))
 	if err != nil {
@@ -97,11 +149,20 @@ func Load() (Config, error) {
 	cfg := Config{
 		AppEnv: stringFromEnv("APP_ENV", "development"),
 		Database: DatabaseConfig{
-			URL: stringFromEnv("APP_DATABASE_URL", ""),
+			URL:             stringFromEnv("APP_DATABASE_URL", ""),
+			MaxOpenConns:    databaseMaxOpenConns,
+			MaxIdleConns:    databaseMaxIdleConns,
+			ConnMaxLifetime: databaseConnMaxLifetime,
+			ConnMaxIdleTime: databaseConnMaxIdleTime,
 		},
 		API: APIConfig{
 			ListenAddr:      stringFromEnv("APP_API_LISTEN_ADDR", ":8080"),
 			ShutdownTimeout: apiShutdownTimeout,
+			ReadTimeout:     apiReadTimeout,
+			WriteTimeout:    apiWriteTimeout,
+			IdleTimeout:     apiIdleTimeout,
+			RequestTimeout:  apiRequestTimeout,
+			MaxHeaderBytes:  apiMaxHeaderBytes,
 		},
 		Worker: WorkerConfig{
 			Enabled:         workerEnabled,
@@ -121,6 +182,15 @@ func Load() (Config, error) {
 			CleanupInterval: logCleanupInterval,
 			Timezone:        timezone,
 			Location:        location,
+		},
+		Outbound: OutboundConfig{
+			Timeout:               outboundTimeout,
+			MaxIdleConns:          outboundMaxIdleConns,
+			MaxIdleConnsPerHost:   outboundMaxIdleConnsPerHost,
+			IdleConnTimeout:       outboundIdleConnTimeout,
+			TLSHandshakeTimeout:   outboundTLSHandshakeTimeout,
+			ResponseHeaderTimeout: outboundResponseHeaderTimeout,
+			ExpectContinueTimeout: outboundExpectContinueTimeout,
 		},
 		Docker: DockerConfig{
 			PostgresHostPort: stringFromEnv("DOCKER_POSTGRES_HOST_PORT", "5432"),
@@ -147,6 +217,36 @@ func (c Config) Validate() error {
 	if c.API.ShutdownTimeout <= 0 {
 		errs = append(errs, errors.New("APP_API_SHUTDOWN_TIMEOUT must be positive"))
 	}
+	if c.API.ReadTimeout <= 0 {
+		errs = append(errs, errors.New("APP_API_READ_TIMEOUT must be positive"))
+	}
+	if c.API.WriteTimeout <= 0 {
+		errs = append(errs, errors.New("APP_API_WRITE_TIMEOUT must be positive"))
+	}
+	if c.API.IdleTimeout <= 0 {
+		errs = append(errs, errors.New("APP_API_IDLE_TIMEOUT must be positive"))
+	}
+	if c.API.RequestTimeout <= 0 {
+		errs = append(errs, errors.New("APP_API_REQUEST_TIMEOUT must be positive"))
+	}
+	if c.API.MaxHeaderBytes <= 0 {
+		errs = append(errs, errors.New("APP_API_MAX_HEADER_BYTES must be positive"))
+	}
+	if c.Database.MaxOpenConns <= 0 {
+		errs = append(errs, errors.New("APP_DATABASE_MAX_OPEN_CONNS must be positive"))
+	}
+	if c.Database.MaxIdleConns < 0 {
+		errs = append(errs, errors.New("APP_DATABASE_MAX_IDLE_CONNS must not be negative"))
+	}
+	if c.Database.MaxIdleConns > c.Database.MaxOpenConns {
+		errs = append(errs, errors.New("APP_DATABASE_MAX_IDLE_CONNS must not exceed APP_DATABASE_MAX_OPEN_CONNS"))
+	}
+	if c.Database.ConnMaxLifetime <= 0 {
+		errs = append(errs, errors.New("APP_DATABASE_CONN_MAX_LIFETIME must be positive"))
+	}
+	if c.Database.ConnMaxIdleTime <= 0 {
+		errs = append(errs, errors.New("APP_DATABASE_CONN_MAX_IDLE_TIME must be positive"))
+	}
 	if c.Worker.PollInterval <= 0 {
 		errs = append(errs, errors.New("APP_WORKER_POLL_INTERVAL must be positive"))
 	}
@@ -170,6 +270,33 @@ func (c Config) Validate() error {
 	}
 	if c.Logging.CleanupInterval <= 0 {
 		errs = append(errs, errors.New("APP_LOG_CLEANUP_INTERVAL must be positive"))
+	}
+	if c.Outbound.Timeout <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_TIMEOUT must be positive"))
+	}
+	if c.Outbound.MaxIdleConns <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_MAX_IDLE_CONNS must be positive"))
+	}
+	if c.Outbound.MaxIdleConnsPerHost <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_MAX_IDLE_CONNS_PER_HOST must be positive"))
+	}
+	if c.Outbound.MaxIdleConnsPerHost > c.Outbound.MaxIdleConns {
+		errs = append(
+			errs,
+			errors.New("APP_OUTBOUND_MAX_IDLE_CONNS_PER_HOST must not exceed APP_OUTBOUND_MAX_IDLE_CONNS"),
+		)
+	}
+	if c.Outbound.IdleConnTimeout <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_IDLE_CONN_TIMEOUT must be positive"))
+	}
+	if c.Outbound.TLSHandshakeTimeout <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_TLS_HANDSHAKE_TIMEOUT must be positive"))
+	}
+	if c.Outbound.ResponseHeaderTimeout <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_RESPONSE_HEADER_TIMEOUT must be positive"))
+	}
+	if c.Outbound.ExpectContinueTimeout <= 0 {
+		errs = append(errs, errors.New("APP_OUTBOUND_EXPECT_CONTINUE_TIMEOUT must be positive"))
 	}
 	if strings.TrimSpace(c.Logging.Timezone) == "" || c.Logging.Location == nil {
 		errs = append(errs, errors.New("APP_TIMEZONE must resolve to a valid location"))

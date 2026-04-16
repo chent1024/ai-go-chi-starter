@@ -3,7 +3,9 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 
+	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
@@ -14,13 +16,13 @@ func Recover(base *slog.Logger) func(http.Handler) http.Handler {
 				if recovered := recover(); recovered != nil {
 					logger := httpx.RequestLogger(req, base)
 					if logger != nil {
-						logger.Error("panic recovered", "err", recovered)
+						logger.Error("panic recovered", "err", recovered, "stack", string(debug.Stack()))
 					}
 					httpx.WriteRequestError(
 						w,
 						req,
 						http.StatusInternalServerError,
-						"INTERNAL",
+						shared.CodeInternal,
 						"internal server error",
 						false,
 					)

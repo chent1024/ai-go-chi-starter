@@ -6,21 +6,36 @@
 2. Start PostgreSQL:
 
 ```bash
-docker compose -f deploy/docker-compose.dev.yaml --env-file deploy/.env.dev.example up -d
+make dev-up
 ```
 
 3. Run migrations:
 
 ```bash
-go run ./cmd/migrate
+make migrate
 ```
 
 4. Start API and worker in separate shells:
 
 ```bash
-go run ./cmd/api
-go run ./cmd/worker
+make run-api
+make run-worker
 ```
+
+## Common Make Targets
+
+- `make build`
+- `make build-api`
+- `make build-worker`
+- `make build-migrate`
+- `make run-api`
+- `make run-worker`
+- `make migrate`
+- `make migrate-version`
+- `make dev-up`
+- `make dev-down`
+- `make dev-logs`
+- `make dev-ps`
 
 ## Runtime Env
 

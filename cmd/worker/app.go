@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"ai-go-chi-starter/internal/config"
@@ -16,10 +17,11 @@ type JobHandler interface {
 }
 
 type application struct {
-	logger   *slog.Logger
-	shutdown func(context.Context) error
-	runLoop  func(context.Context) error
-	close    func()
+	logger     *slog.Logger
+	shutdown   func(context.Context) error
+	runLoop    func(context.Context) error
+	close      func()
+	activeJobs *atomic.Int64
 }
 
 func run(ctx context.Context) error {
@@ -43,7 +45,7 @@ func run(ctx context.Context) error {
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
-		app.logger.Info("worker shutting down")
+		app.logger.Info("worker shutdown requested", "reason", ctx.Err(), "inflight_jobs", app.activeJobs.Load())
 		return app.shutdown(context.Background())
 	}
 }
@@ -52,11 +54,13 @@ func newApplication(ctx context.Context, cfg config.Config, handler JobHandler) 
 	logger, logCloser := runtime.NewLogger(cfg.Logging, "worker", os.Stdout)
 	runtime.StartLogCleanup(ctx, logger.With("component", "logging"), cfg.Logging)
 	done := make(chan struct{})
+	activeJobs := &atomic.Int64{}
 
 	worker := tickerWorker{
-		interval: cfg.Worker.PollInterval,
-		handler:  handler,
-		logger:   logger.With("component", "worker"),
+		interval:   cfg.Worker.PollInterval,
+		handler:    handler,
+		logger:     logger.With("component", "worker"),
+		activeJobs: activeJobs,
 	}
 
 	return &application{
@@ -72,18 +76,27 @@ func newApplication(ctx context.Context, cfg config.Config, handler JobHandler) 
 			return worker.Run(ctx)
 		},
 		shutdown: func(parent context.Context) error {
+			logger.Info(
+				"worker drain started",
+				"shutdown_timeout", cfg.Worker.ShutdownTimeout.String(),
+				"inflight_jobs", activeJobs.Load(),
+			)
 			waitCtx, cancel := context.WithTimeout(parent, cfg.Worker.ShutdownTimeout)
 			defer cancel()
 			select {
 			case <-done:
+				logger.Info("worker drain completed", "inflight_jobs", activeJobs.Load())
 				return nil
 			case <-waitCtx.Done():
 				if waitCtx.Err() == context.DeadlineExceeded {
-					return fmt.Errorf("worker shutdown timed out after %s", cfg.Worker.ShutdownTimeout)
+					err := fmt.Errorf("worker shutdown timed out after %s", cfg.Worker.ShutdownTimeout)
+					logger.Error("worker drain failed", "err", err, "inflight_jobs", activeJobs.Load())
+					return err
 				}
 				return waitCtx.Err()
 			}
 		},
+		activeJobs: activeJobs,
 		close: func() {
 			_ = logCloser.Close()
 		},
@@ -91,9 +104,10 @@ func newApplication(ctx context.Context, cfg config.Config, handler JobHandler) 
 }
 
 type tickerWorker struct {
-	interval time.Duration
-	handler  JobHandler
-	logger   *slog.Logger
+	interval   time.Duration
+	handler    JobHandler
+	logger     *slog.Logger
+	activeJobs *atomic.Int64
 }
 
 func (w tickerWorker) Run(ctx context.Context) error {
@@ -105,7 +119,14 @@ func (w tickerWorker) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			if err := w.handler.Handle(ctx); err != nil {
+			if w.activeJobs != nil {
+				w.activeJobs.Add(1)
+			}
+			err := w.handler.Handle(ctx)
+			if w.activeJobs != nil {
+				w.activeJobs.Add(-1)
+			}
+			if err != nil {
 				return err
 			}
 			w.logger.Debug("worker tick completed")

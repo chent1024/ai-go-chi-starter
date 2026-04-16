@@ -35,7 +35,7 @@ func TestServiceCreate(t *testing.T) {
 
 func TestServiceCreateRejectsEmptyName(t *testing.T) {
 	_, err := NewService(&stubRepository{}).Create(context.Background(), CreateInput{Name: "  "})
-	if shared.Code(err) != "INVALID_ARGUMENT" || shared.HTTPStatus(err) != http.StatusBadRequest {
+	if shared.Code(err) != shared.CodeInvalidArgument || shared.HTTPStatus(err) != http.StatusBadRequest {
 		t.Fatalf("unexpected error = %v", err)
 	}
 }

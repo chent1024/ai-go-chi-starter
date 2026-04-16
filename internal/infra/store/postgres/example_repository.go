@@ -21,7 +21,7 @@ func NewExampleRepository(db *sql.DB) *ExampleRepository {
 
 func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (example.Example, error) {
 	if r.db == nil {
-		return example.Example{}, shared.NewError("INTERNAL", "database is not configured", http.StatusInternalServerError)
+		return example.Example{}, shared.NewError(shared.CodeInternal, "database is not configured", http.StatusInternalServerError)
 	}
 	row := r.db.QueryRowContext(
 		ctx,
@@ -35,7 +35,7 @@ func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (e
 
 func (r *ExampleRepository) Get(ctx context.Context, id string) (example.Example, error) {
 	if r.db == nil {
-		return example.Example{}, shared.NewError("INTERNAL", "database is not configured", http.StatusInternalServerError)
+		return example.Example{}, shared.NewError(shared.CodeInternal, "database is not configured", http.StatusInternalServerError)
 	}
 	row := r.db.QueryRowContext(
 		ctx,
@@ -56,7 +56,7 @@ func (r *ExampleRepository) Get(ctx context.Context, id string) (example.Example
 
 func (r *ExampleRepository) List(ctx context.Context) ([]example.Example, error) {
 	if r.db == nil {
-		return nil, shared.NewError("INTERNAL", "database is not configured", http.StatusInternalServerError)
+		return nil, shared.NewError(shared.CodeInternal, "database is not configured", http.StatusInternalServerError)
 	}
 	rows, err := r.db.QueryContext(
 		ctx,
