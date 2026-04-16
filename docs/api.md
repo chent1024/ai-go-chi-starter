@@ -1,8 +1,8 @@
-# API
+# API 文档
 
 ## Envelope
 
-Every JSON response uses the same envelope:
+所有 JSON 响应都使用同一层 envelope：
 
 ```json
 {
@@ -13,30 +13,30 @@ Every JSON response uses the same envelope:
 }
 ```
 
-Errors add `retryable`.
+错误响应会额外携带 `retryable`。
 
-Reserved cross-cutting codes are documented in [docs/errors.md](/Users/xihe0000/workspace/code/ai-go-chi-starter/docs/errors.md).
+横切层保留错误码见 [docs/errors.md](/Users/xihe0000/workspace/code/ai-go-chi-starter/docs/errors.md)。
 
-## Routes
+## 路由
 
-| Method | Path | Purpose |
+| 方法 | 路径 | 用途 |
 | --- | --- | --- |
-| `GET` | `/healthz` | Liveness probe. |
-| `GET` | `/readyz` | Readiness probe backed by database ping. |
-| `POST` | `/v1/examples` | Create an example. |
-| `GET` | `/v1/examples/{id}` | Fetch a single example. |
-| `GET` | `/v1/examples` | List examples. |
+| `GET` | `/healthz` | 存活探针。 |
+| `GET` | `/readyz` | 基于数据库探活的就绪探针。 |
+| `POST` | `/v1/examples` | 创建 example。 |
+| `GET` | `/v1/examples/{id}` | 获取单个 example。 |
+| `GET` | `/v1/examples` | 获取 example 列表。 |
 
-## Cross-Cutting Behavior
+## 横切行为
 
-- every request gets `X-Request-Id` and `Traceparent`
-- every request is subject to a server-side request timeout
-- timeout responses return `504` with envelope code `REQUEST_TIMEOUT`
-- when shutdown draining starts, new application requests return `503` with envelope code `NOT_READY`
+- 每个请求都会获得 `X-Request-Id` 和 `Traceparent`
+- 每个请求都会受到服务端 request timeout 约束
+- 请求超时时返回 `504`，envelope code 为 `REQUEST_TIMEOUT`
+- graceful shutdown 进入 draining 后，新业务请求返回 `503`，envelope code 为 `NOT_READY`
 
-## Example Resource
+## Example 资源
 
-### Create Request
+### 创建请求
 
 ```json
 {
@@ -44,7 +44,7 @@ Reserved cross-cutting codes are documented in [docs/errors.md](/Users/xihe0000/
 }
 ```
 
-### Example Object
+### Example 对象
 
 ```json
 {

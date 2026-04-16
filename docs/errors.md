@@ -1,19 +1,19 @@
-# Error Codes
+# 错误码说明
 
-This repository keeps a small reserved error code baseline for cross-cutting behavior.
+这个仓库为横切层保留了一组最小错误码基线。
 
-## Reserved Codes
+## 保留错误码
 
-| Code | HTTP Status | Retryable | Meaning |
+| Code | HTTP Status | Retryable | 含义 |
 | --- | --- | --- | --- |
-| `INTERNAL` | `500` | usually `false` | Unexpected server-side failure. |
-| `INVALID_ARGUMENT` | `400` | `false` | Request input is invalid. |
-| `NOT_READY` | `503` | `true` | Dependency not ready or service is draining. |
-| `REQUEST_TIMEOUT` | `504` | `true` | Request exceeded the configured server-side timeout. |
+| `INTERNAL` | `500` | 通常为 `false` | 服务端发生了预期外错误。 |
+| `INVALID_ARGUMENT` | `400` | `false` | 请求输入不合法。 |
+| `NOT_READY` | `503` | `true` | 依赖未就绪，或服务正处于 draining。 |
+| `REQUEST_TIMEOUT` | `504` | `true` | 请求超过了服务端配置的超时。 |
 
-## Usage Rules
+## 使用规则
 
-- keep these codes stable across services derived from this starter
-- add new domain-specific codes on top of this baseline instead of changing it
-- document new cross-cutting codes here before using them in transport or middleware
-- prefer domain-specific codes for business failures and reserved codes for infrastructure or protocol behavior
+- 从这个 starter 派生出的服务应保持这些错误码稳定
+- 新的领域错误码应建立在这组基线之上，而不是直接改动它
+- 新增横切层错误码前，先在这里补文档，再在 transport 或 middleware 中使用
+- 业务失败优先使用领域错误码，基础设施或协议层行为优先使用保留错误码

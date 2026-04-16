@@ -1,72 +1,72 @@
 openapi: 3.1.0
 info:
-  title: AI Go Chi Starter API
+  title: AI Go Chi Starter 接口文档
   version: 0.1.0
 servers:
   - url: http://localhost:8080
 paths:
   /healthz:
     get:
-      summary: Liveness probe
+      summary: 存活探针
       responses:
         '200':
-          description: OK
+          description: 正常
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '504':
-          description: Request timeout
+          description: 请求超时
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
   /readyz:
     get:
-      summary: Readiness probe
+      summary: 就绪探针
       responses:
         '200':
-          description: Ready
+          description: 已就绪
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '503':
-          description: Not ready
+          description: 未就绪
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '504':
-          description: Request timeout
+          description: 请求超时
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
   /v1/examples:
     get:
-      summary: List examples
+      summary: 获取 example 列表
       responses:
         '200':
-          description: Example list
+          description: example 列表
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '503':
-          description: Service draining or not ready
+          description: 服务正在 draining 或尚未就绪
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '504':
-          description: Request timeout
+          description: 请求超时
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
     post:
-      summary: Create example
+      summary: 创建 example
       requestBody:
         required: true
         content:
@@ -75,32 +75,32 @@ paths:
               $ref: '#/components/schemas/CreateExampleRequest'
       responses:
         '201':
-          description: Created
+          description: 创建成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '400':
-          description: Invalid request
+          description: 请求不合法
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '503':
-          description: Service draining or not ready
+          description: 服务正在 draining 或尚未就绪
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '504':
-          description: Request timeout
+          description: 请求超时
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
   /v1/examples/{id}:
     get:
-      summary: Get example by id
+      summary: 按 id 获取 example
       parameters:
         - in: path
           name: id
@@ -109,25 +109,25 @@ paths:
             type: string
       responses:
         '200':
-          description: Example detail
+          description: example 详情
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '404':
-          description: Not found
+          description: 未找到
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '503':
-          description: Service draining or not ready
+          description: 服务正在 draining 或尚未就绪
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Envelope'
         '504':
-          description: Request timeout
+          description: 请求超时
           content:
             application/json:
               schema:

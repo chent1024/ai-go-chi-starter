@@ -1,92 +1,86 @@
-# AI Go Chi Starter Implementation Plan
+# AI Go Chi Starter 实施计划
 
-## Purpose
+## 目标
 
-This repository is intended to become a Codex-friendly Go service starter template.
-It should provide a clean, opinionated baseline for new Go services so Codex can start
-from a stable structure instead of rebuilding infrastructure from scratch or drifting
-into ad hoc project layouts.
+这个仓库的目标是成为一个对 Codex 友好的 Go 服务 starter template。
+它需要给新 Go 服务提供一套干净、明确、有取舍的起始骨架，让 Codex 可以直接在稳定结构上继续实现，而不是每次从零重搭基础设施，或者把项目逐步写成随意拼接的目录结构。
 
-The template should be small, explicit, and production-oriented. It should optimize for:
+这个模板应当保持小而明确，并以可落地为导向。重点优化这些方面：
 
-- predictable file placement
-- clear dependency direction
-- minimal but solid infrastructure
-- chi-based HTTP routing
-- structured logging
-- centralized configuration
-- basic PostgreSQL wiring
-- a small demo domain that shows the intended coding style
+- 文件放置位置可预测
+- 依赖方向清晰
+- 基础设施尽量少但足够扎实
+- 使用 chi 做 HTTP 路由
+- 使用结构化日志
+- 配置集中读取
+- 提供基础 PostgreSQL wiring
+- 用一个小型 demo domain 展示推荐编码方式
 
-This template should **not** become a generic application framework or a dumping ground
-for unrelated reusable code.
+这个模板**不应该**演变成通用应用框架，也不应该变成无关复用代码的堆积区。
 
-## Source of Truth for Design
+## 设计参考源
 
-This starter should be **inspired by** the service skeleton in:
+这个 starter 可以**参考**以下服务骨架：
 
 - `/Users/xihe0000/workspace/code/app-storage-transfer/app`
 
-But it should **not** copy that service wholesale. The current upload service contains
-domain-specific code that must not leak into this starter:
+但**不能**整体照搬那个服务。当前 upload 服务里有大量领域专属代码，不应该泄漏到这个 starter：
 
-- upload lifecycle and status transitions
-- object store abstractions
-- provider adapters
-- Minimax integration
-- staging management
-- queue/poller/purger/expirer governance
-- upload-specific API surface and domain models
+- upload 生命周期与状态流转
+- object store 抽象
+- provider 适配器
+- Minimax 集成
+- staging 管理
+- queue / poller / purger / expirer 治理逻辑
+- upload 专属 API surface 和领域模型
 
-Only the reusable skeleton, layering ideas, and horizontal infrastructure should be
-adapted into this repository.
+这里只应吸收可复用的骨架、分层思路和横切基础设施。
 
-## Target Positioning
+## 仓库定位
 
-This repository should be implemented as a **starter template repository**, not as a
-shared Go library and not as a direct clone of the upload service.
+这个仓库应实现为一个**starter template repository**，而不是共享 Go library，也不是 upload 服务的直接克隆。
 
-Recommended outcome:
+建议达成的结果：
 
-- a clean repository scaffold
-- one demo HTTP resource
-- one demo worker skeleton
-- one demo PostgreSQL-backed repository
-- one rule/verification setup
-- one short AGENTS contract that tells Codex where code belongs
+- 一套干净的仓库骨架
+- 一个 demo HTTP 资源
+- 一个 demo worker skeleton
+- 一个基于 PostgreSQL 的 demo repository
+- 一套规则 / 校验配置
+- 一份简短的 AGENTS 契约，告诉 Codex 代码应该放在哪里
 
-## Architectural Principles
+## 架构原则
 
-The starter must enforce these boundaries:
+这个 starter 必须强制保持这些边界：
 
-1. `cmd/*` only wires processes together.
-2. `transport` handles HTTP protocol concerns only.
-3. `service` contains business rules.
-4. `infra` contains concrete adapters, repositories, and clients.
-5. `config` is the only place where environment variables are read.
-6. `runtime` contains cross-cutting infrastructure such as logging, tracing context, and outbound logging.
-7. Handlers must not contain business logic.
-8. Services must not depend on chi or HTTP types.
-9. Repositories must not return HTTP DTOs.
-10. The starter must prefer explicit small abstractions over framework-like magic.
+1. `cmd/*` 只负责进程装配。
+2. `transport` 只处理 HTTP 协议相关问题。
+3. `service` 承载业务规则。
+4. `infra` 承载具体适配器、repository 和 client。
+5. `config` 是唯一允许读取环境变量的地方。
+6. `runtime` 承载日志、trace context、outbound logging 等横切基础设施。
+7. Handler 里不能写业务逻辑。
+8. Service 不能依赖 chi 或 HTTP 类型。
+9. Repository 不能返回 HTTP DTO。
+10. 优先使用明确的小抽象，而不是框架式 magic。
 
-## Non-Goals for V1
+## V1 非目标
 
-Do **not** include these in the first version:
+第一版**不要**包含这些内容：
 
 - object storage
-- provider/client abstractions for AI vendors
-- file staging or upload orchestration
-- distributed job queues
-- complex retry governance
-- advanced authentication flows
-- tenancy abstractions
-- code generation pipelines beyond a basic OpenAPI stub
-- generalized domain toolkit packages
+- 面向 AI vendor 的 provider/client 抽象
+- 文件 staging 或 upload orchestration
+- 分布式任务队列
+- 复杂重试治理
+- 高级鉴权流程
+- 多租户抽象
+- 超出基础 OpenAPI stub 的代码生成流水线
+- 泛化的领域工具包
 
-## Recommended Repository Layout
+## 推荐仓库结构
 
-The starter should be built toward this structure:
+starter 目标结构如下：
 
 ```text
 ai-go-chi-starter/
@@ -166,72 +160,71 @@ ai-go-chi-starter/
 └── .runtime/
 ```
 
-## Required V1 Capabilities
+## V1 必须具备的能力
 
-The first usable version should include the following:
+第一版可用版本至少应包含以下内容：
 
-### 1. API Process Skeleton
+### 1. API 进程骨架
 
-Implement:
+实现：
 
 - `cmd/api/main.go`
 - `cmd/api/app.go`
 
-Capabilities:
+能力要求：
 
-- load config
-- construct logger
-- construct HTTP server
+- 加载配置
+- 构造 logger
+- 构造 HTTP server
 - graceful shutdown
-- return non-zero on startup failure
+- 启动失败时返回非零退出码
 
-### 2. Worker Process Skeleton
+### 2. Worker 进程骨架
 
-Implement:
+实现：
 
 - `cmd/worker/main.go`
 - `cmd/worker/app.go`
 
-Capabilities:
+能力要求：
 
-- load config
-- construct logger
-- start ticker loop
-- demonstrate a `JobHandler` interface
+- 加载配置
+- 构造 logger
+- 启动 ticker loop
+- 提供一个 `JobHandler` 接口示例
 - graceful shutdown
 
-This worker should be intentionally small and generic. It should not bring over the
-upload service governance machinery.
+这个 worker 应刻意保持小而通用，不应把 upload 服务那套治理逻辑带进来。
 
-### 3. Migration Process
+### 3. Migration 进程
 
-Implement:
+实现：
 
 - `cmd/migrate/main.go`
 
-Capabilities:
+能力要求：
 
-- connect to PostgreSQL
-- run SQL migrations from `db/migrations`
+- 连接 PostgreSQL
+- 执行 `db/migrations` 下的 SQL migration
 
-### 4. Configuration System
+### 4. 配置系统
 
-Implement:
+实现：
 
 - `internal/config/config.go`
 - `internal/config/config_test.go`
 
-Requirements:
+要求：
 
-- environment-only configuration
-- centralized parsing
-- explicit defaults
-- startup validation
-- no environment reads outside `internal/config`
+- 只通过环境变量配置
+- 集中解析
+- 明确默认值
+- 启动阶段完成校验
+- `internal/config` 之外不允许读取环境变量
 
-### 5. Logging and Runtime Cross-Cutting Layer
+### 5. 日志与 Runtime 横切层
 
-Implement:
+实现：
 
 - `internal/runtime/logging.go`
 - `internal/runtime/log_file.go`
@@ -240,76 +233,82 @@ Implement:
 - `internal/runtime/trace.go`
 - `internal/runtime/outbound.go`
 
-Requirements:
+要求：
 
 - `slog`
-- text/json format
-- stdout/file/both output
-- daily log file rotation by date
-- basic retention cleanup
-- trace-aware logger enrichment
+- `text/json` 格式
+- `stdout/file/both` 输出
+- 按日期轮转日志文件
+- 基础保留与清理能力
+- 支持 trace 感知的 logger 增强
 - outbound request logging helper
 
-### 6. HTTP Layer with chi
+### 6. 基于 chi 的 HTTP 层
 
-Implement:
+实现：
 
 - `internal/transport/httpapi/router.go`
 - `internal/transport/httpapi/middleware/*`
 - `internal/transport/httpapi/httpx/*`
 
-Requirements:
+要求：
 
-- use `github.com/go-chi/chi/v5`
-- middleware order:
+- 使用 `github.com/go-chi/chi/v5`
+- middleware 顺序：
   1. recover
   2. request id
   3. trace
   4. access log
-- expose:
+- 暴露：
   - `GET /healthz`
   - `GET /readyz`
   - `POST /v1/examples`
   - `GET /v1/examples/{id}`
   - `GET /v1/examples`
 
-### 7. Demo Domain
+### 7. Demo 领域
 
-Implement one minimal domain named `example`.
+实现一个最小领域 `example`。
 
-Purpose:
+目的：
 
-- show the intended handler/service/repository split
-- provide a real executable path for tests and docs
-- avoid shipping an empty infrastructure-only skeleton
+- 展示推荐的 handler / service / repository 分层方式
+- 为测试和文档提供一条真实可执行的链路
+- 避免仓库只剩一个空的基础设施骨架
 
 ### 8. PostgreSQL Repository
 
-Implement:
+实现：
 
 - `internal/infra/store/postgres/db.go`
 - `internal/infra/store/postgres/example_repository.go`
 
-### 9. Rules and Developer Guardrails
+要求：
 
-The starter should include:
+- 使用 PostgreSQL 和 `database/sql`
+- 提供 example 的 create / get / list 持久化实现
+- 不返回 HTTP DTO
+
+### 9. 规则与开发约束
+
+starter 需要包含：
 
 - `.orch/rules/`
 - `Makefile.rules`
 - `AGENTS.md`
 
-These should enforce:
+这些约束需要保证：
 
-- config/docs sync discipline
-- directory ownership
-- no env reads outside config
-- HTTP contract updates when routes change
+- 配置与文档保持同步
+- 目录职责边界清晰
+- `config` 之外禁止读取 env
+- 路由变化时同步更新 HTTP contract
 
-## Demo Domain Specification
+## Demo 领域规格
 
-The starter should use a single demo resource named `example`.
+starter 使用一个名为 `example` 的 demo 资源。
 
-### Domain model
+### 领域模型
 
 ```go
 type Example struct {
@@ -320,30 +319,29 @@ type Example struct {
 }
 ```
 
-### HTTP surface
+### HTTP 面
 
 - `POST /v1/examples`
 - `GET /v1/examples/{id}`
 - `GET /v1/examples`
 
-### Service interface
+### Service 接口
 
 - `Create(ctx, input)`
 - `Get(ctx, id)`
 - `List(ctx)`
 
-### Repository interface
+### Repository 接口
 
 - `Create(ctx, Example) error`
 - `Get(ctx, id) (Example, error)`
 - `List(ctx) ([]Example, error)`
 
-This domain should remain deliberately boring. The goal is to teach shape, not domain
-complexity.
+这个领域应刻意保持简单直接，重点是展示结构，而不是展示业务复杂度。
 
-## Environment Variables for V1
+## V1 环境变量
 
-Recommended initial runtime keys:
+建议的第一版运行时配置项：
 
 ```env
 APP_ENV=development
@@ -370,7 +368,7 @@ APP_LOG_OUTBOUND_LEVEL=debug
 APP_TIMEZONE=UTC
 ```
 
-Development-only example env should additionally include Docker PostgreSQL variables:
+开发环境示例还应额外包含 Docker PostgreSQL 变量：
 
 ```env
 DOCKER_POSTGRES_HOST_PORT=5432
@@ -379,11 +377,11 @@ DOCKER_POSTGRES_USER=postgres
 DOCKER_POSTGRES_PASSWORD=postgres
 ```
 
-## Migration Plan from app-storage-transfer
+## 从 app-storage-transfer 迁移的参考范围
 
-### Safe to adapt directly
+### 可以直接参考的部分
 
-These areas are good reference sources:
+这些区域可以作为较安全的参考源：
 
 - `app/internal/config/config.go`
 - `app/internal/runtime/logging.go`
@@ -396,195 +394,195 @@ These areas are good reference sources:
 - `app/internal/service/shared/trace.go`
 - `app/cmd/api/app.go`
 
-### Must be rewritten, not copied
+### 必须重写，不能照搬
 
 - `app/internal/transport/httpapi/router.go`
-  - must be rebuilt for chi
-- all `uploads` domain code
-- all object store/provider code
-- all queue/governance code
-- all upload/minimax/staging behavior
+  - 必须改成基于 chi 的实现
+- 所有 `uploads` 领域代码
+- 所有 object store/provider 代码
+- 所有 queue/governance 代码
+- 所有 upload/minimax/staging 行为
 
-## Implementation Phases
+## 实施阶段
 
-The repository should be implemented in this order.
+仓库应按以下顺序实施。
 
-### Phase 1: Bootstrap
+### 第一阶段：Bootstrap
 
-Create:
+创建：
 
 - `go.mod`
 - `.gitignore`
 - `README.md`
-- directory skeleton
+- 目录骨架
 - `Makefile`
 
-Success criteria:
+完成标准：
 
-- repository layout exists
-- `go test ./...` is runnable, even if minimal
+- 仓库目录结构已经建立
+- `go test ./...` 已可执行，即使实现仍然很小
 
-### Phase 2: Config and Runtime
+### 第二阶段：Config 与 Runtime
 
-Create:
+创建：
 
 - `internal/config/*`
 - `internal/runtime/*`
-- env example files
+- env 示例文件
 
-Success criteria:
+完成标准：
 
-- config loads successfully
-- logger can write to stdout
-- config tests pass
+- 配置能成功加载
+- logger 能写到 stdout
+- config tests 通过
 
-### Phase 3: HTTP Foundation
+### 第三阶段：HTTP 基础层
 
-Create:
+创建：
 
 - chi router
 - middleware
-- httpx package
-- `healthz` and `readyz`
+- httpx 包
+- `healthz` 和 `readyz`
 
-Success criteria:
+完成标准：
 
-- server boots
-- health endpoints respond
-- access log is emitted
+- 服务能正常启动
+- health 端点能响应
+- access log 能正常输出
 
-### Phase 4: Demo Domain
+### 第四阶段：Demo 领域
 
-Create:
+创建：
 
 - `service/example/*`
 - `transport/httpapi/v1/example_handler.go`
 
-Success criteria:
+完成标准：
 
-- example handlers compile
-- in-memory or stub tests validate flow before DB wiring
+- example handler 可以通过编译
+- 在接数据库之前，先用 in-memory 或 stub tests 验证主流程
 
-### Phase 5: Database
+### 第五阶段：数据库
 
-Create:
+创建：
 
 - migrations
-- postgres connection
+- postgres 连接
 - postgres repository
 - migrate command
 
-Success criteria:
+完成标准：
 
-- migration applies
-- create/get/list works through postgres repository
+- migration 能成功执行
+- create / get / list 能通过 postgres repository 跑通
 
-### Phase 6: Worker and Docs
+### 第六阶段：Worker 与文档
 
-Create:
+创建：
 
 - worker skeleton
 - OpenAPI stub
 - docs
-- rules and AGENTS contract
+- rules 和 AGENTS 契约
 
-Success criteria:
+完成标准：
 
-- all baseline commands pass
-- repository is understandable without tribal knowledge
+- 所有基础命令都能通过
+- 不依赖口口相传也能理解仓库结构和约束
 
-## Testing Requirements
+## 测试要求
 
-The first implementation should include:
+第一版实现至少应包含：
 
-### Config tests
+### 配置测试
 
-- valid default loading
-- invalid duration handling
-- invalid log format handling
+- 默认值加载正确
+- 非法 duration 能被识别
+- 非法日志格式能被识别
 
-### HTTP utility tests
+### HTTP 工具测试
 
 - request id middleware
 - trace middleware
-- envelope/error writer
-- access log basic behavior
+- envelope / error writer
+- access log 基础行为
 
-### Service tests
+### Service 测试
 
-- example create validation
+- example create 校验
 - get not found
-- list behavior
+- list 行为
 
-### Handler tests
+### Handler 测试
 
-- create success/failure
-- get success/404
+- create success / failure
+- get success / 404
 - list success
 
-### Repository tests
+### Repository 测试
 
 - postgres create
 - postgres get
 - postgres list
 
-## Rules for Codex During Implementation
+## Codex 实施时的规则
 
-Codex should follow these implementation constraints:
+Codex 应遵守以下实现约束：
 
-1. Do not place business logic in handlers.
-2. Do not read env vars outside `internal/config`.
-3. Do not introduce framework-like magic or hidden global state.
-4. Keep files and functions small.
-5. Use explicit interfaces only where there is a real boundary.
-6. Prefer the standard library plus chi/slog/pgx over larger frameworks.
-7. Keep the demo domain intentionally minimal.
-8. Do not introduce upload, provider, objectstore, or AI-specific abstractions.
+1. 不要把业务逻辑放进 handler。
+2. 不要在 `internal/config` 之外读取 env。
+3. 不要引入框架式 magic 或隐藏的全局状态。
+4. 保持文件和函数短小。
+5. 只有存在真实边界时才引入显式接口。
+6. 优先使用标准库加 chi / slog / pgx，不要上更重的框架。
+7. demo domain 要刻意保持最小。
+8. 不要引入 upload、provider、objectstore 或 AI 专属抽象。
 
-## Acceptance Criteria
+## 验收标准
 
-The starter is ready for first use when all of the following are true:
+当以下条件全部满足时，可以认为这个 starter 已可首次投入使用：
 
-- the repository boots an API process
-- the repository boots a worker process
-- config is centralized and documented
-- HTTP routes use chi
-- the demo resource works end-to-end
-- OpenAPI stub exists
-- docs explain structure and setup
-- verification commands run successfully
-- Codex can extend the repository without first reorganizing it
+- 仓库可以启动 API 进程
+- 仓库可以启动 worker 进程
+- config 已集中管理并完成文档说明
+- HTTP 路由基于 chi
+- demo 资源能端到端工作
+- 已有 OpenAPI stub
+- 文档已经说明结构和启动方式
+- 校验命令可以成功执行
+- Codex 无需先重构目录就能继续扩展仓库
 
-## Suggested Codex Execution Prompt
+## 建议给 Codex 的执行提示词
 
-Use this repository to build a minimal chi-based Go starter template.
+使用这个仓库构建一个最小的、基于 chi 的 Go starter template。
 
-Implement:
+实现：
 
 - `cmd/api`, `cmd/worker`, `cmd/migrate`
-- centralized config loading in `internal/config`
-- runtime logging/trace/outbound helpers in `internal/runtime`
-- chi router and middleware in `internal/transport/httpapi`
-- JSON envelope/error helpers in `internal/transport/httpapi/httpx`
-- one minimal demo resource `example` with create/get/list
-- postgres repository and SQL migration
-- env examples under `deploy/`
-- OpenAPI stub under `openapi/`
-- docs under `docs/`
-- rules and AGENTS guardrails
+- 在 `internal/config` 中集中加载配置
+- 在 `internal/runtime` 中实现 runtime logging / trace / outbound helpers
+- 在 `internal/transport/httpapi` 中实现 chi router 和 middleware
+- 在 `internal/transport/httpapi/httpx` 中实现 JSON envelope / error helpers
+- 实现一个最小 demo 资源 `example`，支持 create / get / list
+- 实现 postgres repository 和 SQL migration
+- 在 `deploy/` 下提供 env 示例
+- 在 `openapi/` 下提供 OpenAPI stub
+- 在 `docs/` 下补齐文档
+- 补齐 rules 和 AGENTS 约束
 
-Constraints:
+约束：
 
-- no upload/objectstore/provider/minimax code
-- no large framework abstractions
-- handler -> service -> repository separation is mandatory
-- chi is required
-- slog is required
-- all env reads must stay inside config
+- 不要引入 upload / objectstore / provider / minimax 代码
+- 不要引入大框架式抽象
+- 必须保持 handler -> service -> repository 的职责分离
+- 必须使用 chi
+- 必须使用 slog
+- 所有 env 读取都必须留在 config 中
 
-Use the upload service repository at:
+可参考以下 upload 服务仓库：
 
 - `/Users/xihe0000/workspace/code/app-storage-transfer/app`
 
-as a structural reference only for reusable runtime/config/httpx patterns.
-Do not copy its domain-specific upload logic.
+但只允许把它作为 runtime / config / httpx 结构模式的参考。
+不要复制其中领域专属的 upload 逻辑。

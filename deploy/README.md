@@ -1,28 +1,28 @@
-# Deploy Notes
+# 部署说明
 
-## Local Development
+## 本地开发
 
-1. Copy `deploy/.env.dev.example` to a local env file if needed.
-2. Start PostgreSQL:
+1. 如有需要，先将 `deploy/.env.dev.example` 复制为本地 env 文件。
+2. 启动 PostgreSQL：
 
 ```bash
 make dev-up
 ```
 
-3. Run migrations:
+3. 执行 migration：
 
 ```bash
 make migrate
 ```
 
-4. Start API and worker in separate shells:
+4. 在两个终端里分别启动 API 和 worker：
 
 ```bash
 make run-api
 make run-worker
 ```
 
-## Common Make Targets
+## 常用 Make 入口
 
 - `make build`
 - `make build-api`
@@ -37,7 +37,7 @@ make run-worker
 - `make dev-logs`
 - `make dev-ps`
 
-## Runtime Env
+## 运行时环境变量
 
-`deploy/.env.runtime.example` contains only the application runtime keys.
-`deploy/.env.dev.example` adds the Docker-only PostgreSQL keys used by Compose.
+`deploy/.env.runtime.example` 只包含应用运行时所需的配置项。  
+`deploy/.env.dev.example` 在此基础上额外加入了 Compose 使用的 Docker 本地 PostgreSQL 配置项。
