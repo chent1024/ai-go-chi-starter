@@ -1,14 +1,13 @@
 package shared
 
 import (
-	"net/http"
 	"testing"
 )
 
 func TestErrInvalidArgumentCarriesFieldErrors(t *testing.T) {
 	err := ErrInvalidArgument("name is required", WithFieldErrors(RequiredField("name")))
 
-	if Code(err) != CodeInvalidArgument || HTTPStatus(err) != http.StatusBadRequest {
+	if Code(err) != CodeInvalidArgument || HTTPStatus(err) != StatusBadRequest {
 		t.Fatalf("unexpected error metadata: code=%q status=%d", Code(err), HTTPStatus(err))
 	}
 

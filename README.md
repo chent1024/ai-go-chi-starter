@@ -2,6 +2,18 @@
 
 一个面向 Codex 的最小 Go 服务模板仓库。
 
+## 模板硬约束
+
+- handler 不写业务逻辑，只负责 HTTP 协议转换
+- service 不依赖 `chi`、`net/http` 或 HTTP DTO
+- repository 不返回 transport DTO
+- 所有 env 读取只允许放在 `internal/config/config.go`
+- 改 API 路由、字段或错误语义时，必须同步 `docs/api.md`、`openapi/openapi.yaml` 和测试
+- 改配置时，必须同步 `.env.example`、`deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/config.md`
+- 改 runtime wiring、并发、存储、契约或 migration 时，必须跑 `make verify-strict`
+
+Codex 扩展这个模板前，建议先读 [docs/codex-guide.md](docs/codex-guide.md) 和 [docs/recipes/add-domain.md](docs/recipes/add-domain.md)。
+
 ## 特性
 
 - 基于 `chi` 的 HTTP 路由，内置 request ID、trace、recover、access log middleware

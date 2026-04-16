@@ -721,10 +721,10 @@ render_makefile_rules_content() {
         echo "	fi"
         echo "	${root_cmd} \$(GOLANGCI_LINT) run \$(GOLANGCI_LINT_ARGS) --config \$(CURDIR)/.orch/rules/lint/.golangci.base.yml ./..."
         echo "	${root_cmd} go test ./..."
-        echo "	${root_cmd} go test -race ./..."
         echo "	bash .orch/rules/scripts/verify-config-docs.sh .orch/rules/$name/rules.env"
         echo
         echo "verify-strict-$name: verify-$name"
+        echo "	${root_cmd} go test -race ./..."
         printf '\t%s go test -run '\''^$$'\'' -bench . -benchmem ./...\n' "$root_cmd"
       elif [[ "$lang" == "ts" ]]; then
         echo "verify-$name:"

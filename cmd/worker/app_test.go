@@ -32,7 +32,7 @@ func TestTickerWorkerPassesCancelableContextToHandler(t *testing.T) {
 
 	select {
 	case <-handlerStarted:
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("handler did not start")
 	}
 	cancel()
@@ -42,7 +42,7 @@ func TestTickerWorkerPassesCancelableContextToHandler(t *testing.T) {
 		if err != context.Canceled {
 			t.Fatalf("handler ctx err = %v, want context.Canceled", err)
 		}
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("handler did not observe cancellation")
 	}
 

@@ -80,4 +80,5 @@
 - 新增或调整保留错误码时，必须同步 `docs/errors.md`
 - 所有长耗时逻辑必须接受并向下传递 `context.Context`，service / repository / outbound client / worker handler 都必须尊重 `ctx.Done()`
 - 数据库访问必须优先使用 `QueryContext` / `ExecContext` / `BeginTx` 这类 context 版本 API；出站 HTTP 必须使用 `NewRequestWithContext`
+- 新增 domain 或 HTTP 能力前，优先阅读 `docs/codex-guide.md` 和对应 recipe；默认沿用现有 `example` 模式扩展，不新造框架
 <!-- rules:user:end -->
