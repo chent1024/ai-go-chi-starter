@@ -38,6 +38,13 @@ func TestServiceCreateRejectsEmptyName(t *testing.T) {
 	if shared.Code(err) != shared.CodeInvalidArgument || shared.HTTPStatus(err) != http.StatusBadRequest {
 		t.Fatalf("unexpected error = %v", err)
 	}
+	details, ok := shared.Details(err).(shared.ValidationDetails)
+	if !ok || len(details.FieldErrors) != 1 {
+		t.Fatalf("unexpected details = %#v", shared.Details(err))
+	}
+	if details.FieldErrors[0].Field != "name" {
+		t.Fatalf("field error = %+v", details.FieldErrors[0])
+	}
 }
 
 func TestServiceGet(t *testing.T) {
@@ -75,7 +82,7 @@ func TestServiceList(t *testing.T) {
 }
 
 func TestServiceReturnsRepositoryError(t *testing.T) {
-	wantErr := shared.NewError("EXAMPLE_NOT_FOUND", "example not found", http.StatusNotFound)
+	wantErr := ErrNotFound()
 	repo := &stubRepository{
 		getFn: func(ctx context.Context, id string) (Example, error) {
 			_ = ctx

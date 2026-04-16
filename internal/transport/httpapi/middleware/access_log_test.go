@@ -42,7 +42,7 @@ func TestAccessLogCapturesTimeoutStatus(t *testing.T) {
 	router.Use(RequestID)
 	router.Use(Trace)
 	router.Use(AccessLog(slog.New(slog.NewJSONHandler(&logs, nil)), true))
-	router.Use(RequestTimeout(10 * time.Millisecond))
+	router.Use(RequestTimeout(10*time.Millisecond, nil, nil))
 	router.Get("/slow", func(w http.ResponseWriter, r *http.Request) {
 		<-r.Context().Done()
 	})

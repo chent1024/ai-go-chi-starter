@@ -18,8 +18,10 @@ import (
 )
 
 func run(ctx context.Context) error {
+	bootstrapLogger := runtime.NewBootstrapLogger("api", os.Stderr)
 	cfg, err := config.Load()
 	if err != nil {
+		bootstrapLogger.Error("api bootstrap failed", "kind", "fatal", "stage", "config", "err", err)
 		return fmt.Errorf("load config: %w", err)
 	}
 
@@ -41,6 +43,7 @@ func run(ctx context.Context) error {
 		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}
+		app.logger.Error("api server exited unexpectedly", "err", err)
 		return err
 	case <-ctx.Done():
 		app.logger.Info("api shutdown requested", "reason", ctx.Err())
@@ -60,21 +63,27 @@ func newApplication(ctx context.Context, cfg config.Config) (*application, error
 	logger, logCloser := runtime.NewLogger(cfg.Logging, "api", os.Stdout)
 	runtime.StartLogCleanup(ctx, logger.With("component", "logging"), cfg.Logging)
 	drainState := &runtime.DrainState{}
+	build := buildInfo()
+	metrics := runtime.NewMetrics(build)
 
 	db, err := postgres.Open(ctx, cfg.Database)
 	if err != nil {
+		logger.Error("api startup failed", "err", err)
 		_ = logCloser.Close()
 		return nil, err
 	}
 
-	repo := postgres.NewExampleRepository(db)
+	repo := postgres.NewExampleRepository(db).WithLogger(logger.With("component", "example_repository"))
 	service := example.NewService(repo)
-	handler := v1.NewExampleHandler(service).WithLogger(logger.With("component", "example_handler"))
+	handler := v1.NewExampleHandler(service)
 	router := httpapi.NewRouter(httpapi.RouterOptions{
 		Logging:        cfg.Logging,
 		RequestTimeout: cfg.API.RequestTimeout,
+		MaxBodyBytes:   cfg.API.MaxBodyBytes,
 		DrainState:     drainState,
 		Logger:         logger,
+		BuildInfo:      build,
+		Metrics:        metrics,
 		ExampleHandler: handler,
 		ReadyChecker:   postgres.ReadyChecker{DB: db},
 	})

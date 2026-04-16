@@ -1,3 +1,5 @@
+name: ai-go-chi-starter-dev
+
 services:
   postgres:
     image: postgres:16-alpine

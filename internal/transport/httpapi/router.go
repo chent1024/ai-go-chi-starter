@@ -24,8 +24,11 @@ type ReadyChecker interface {
 type RouterOptions struct {
 	Logging        config.LoggingConfig
 	RequestTimeout time.Duration
+	MaxBodyBytes   int64
 	DrainState     *runtime.DrainState
 	Logger         *slog.Logger
+	BuildInfo      runtime.BuildInfo
+	Metrics        *runtime.Metrics
 	ExampleHandler *v1.ExampleHandler
 	ReadyChecker   ReadyChecker
 }
@@ -37,12 +40,15 @@ func NewRouter(options RouterOptions) http.Handler {
 	}
 
 	r := chi.NewRouter()
+	r.Use(middleware.Recover(logger))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Trace)
+	r.Use(middleware.SecurityHeaders)
 	r.Use(middleware.AccessLog(logger, options.Logging.AccessEnabled))
+	r.Use(middleware.Metrics(options.Metrics))
 	r.Use(middleware.Drain(options.DrainState))
-	r.Use(middleware.RequestTimeout(options.RequestTimeout))
-	r.Use(middleware.Recover(logger))
+	r.Use(middleware.BodyLimit(options.MaxBodyBytes))
+	r.Use(middleware.RequestTimeout(options.RequestTimeout, logger, options.Metrics))
 
 	r.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
 		httpx.WriteEnvelope(w, http.StatusOK, httpx.RequestID(req), map[string]string{"status": "ok"})
@@ -74,6 +80,12 @@ func NewRouter(options RouterOptions) http.Handler {
 		}
 		httpx.WriteEnvelope(w, http.StatusOK, httpx.RequestID(req), map[string]string{"status": "ready"})
 	})
+	r.Get("/version", func(w http.ResponseWriter, req *http.Request) {
+		httpx.WriteEnvelope(w, http.StatusOK, httpx.RequestID(req), options.BuildInfo)
+	})
+	if options.Metrics != nil {
+		r.Handle("/metrics", options.Metrics)
+	}
 	if options.ExampleHandler != nil {
 		r.Post("/v1/examples", options.ExampleHandler.Create)
 		r.Get("/v1/examples", options.ExampleHandler.List)

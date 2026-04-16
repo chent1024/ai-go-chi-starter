@@ -5,26 +5,37 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 
+	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/example"
 	"ai-go-chi-starter/internal/service/shared"
+	"log/slog"
 )
 
 type ExampleRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *slog.Logger
 }
 
 func NewExampleRepository(db *sql.DB) *ExampleRepository {
 	return &ExampleRepository{db: db}
 }
 
-func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (example.Example, error) {
+func (r *ExampleRepository) WithLogger(logger *slog.Logger) *ExampleRepository {
+	r.logger = logger
+	return r
+}
+
+func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (_ example.Example, err error) {
 	if r.db == nil {
-		return example.Example{}, shared.NewError(shared.CodeInternal, "database is not configured", http.StatusInternalServerError)
+		return example.Example{}, shared.ErrInternal("database is not configured")
 	}
+	spanCtx, span := runtime.StartSpan(ctx, r.logger, "postgres.example.create")
+	defer func() {
+		span.End(err, "db.system", "postgres", "db.operation", "insert", "db.table", "examples")
+	}()
 	row := r.db.QueryRowContext(
-		ctx,
+		spanCtx,
 		`INSERT INTO examples (id, name) VALUES ($1, $2)
 		 RETURNING id, name, created_at, updated_at`,
 		item.ID,
@@ -33,12 +44,16 @@ func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (e
 	return scanExample(row)
 }
 
-func (r *ExampleRepository) Get(ctx context.Context, id string) (example.Example, error) {
+func (r *ExampleRepository) Get(ctx context.Context, id string) (_ example.Example, err error) {
 	if r.db == nil {
-		return example.Example{}, shared.NewError(shared.CodeInternal, "database is not configured", http.StatusInternalServerError)
+		return example.Example{}, shared.ErrInternal("database is not configured")
 	}
+	spanCtx, span := runtime.StartSpan(ctx, r.logger, "postgres.example.get")
+	defer func() {
+		span.End(err, "db.system", "postgres", "db.operation", "select_one", "db.table", "examples")
+	}()
 	row := r.db.QueryRowContext(
-		ctx,
+		spanCtx,
 		`SELECT id, name, created_at, updated_at
 		 FROM examples
 		 WHERE id = $1`,
@@ -49,17 +64,21 @@ func (r *ExampleRepository) Get(ctx context.Context, id string) (example.Example
 		return item, nil
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		return example.Example{}, shared.NewError("EXAMPLE_NOT_FOUND", "example not found", http.StatusNotFound)
+		return example.Example{}, example.ErrNotFound()
 	}
 	return example.Example{}, fmt.Errorf("get example: %w", err)
 }
 
-func (r *ExampleRepository) List(ctx context.Context) ([]example.Example, error) {
+func (r *ExampleRepository) List(ctx context.Context) (_ []example.Example, err error) {
 	if r.db == nil {
-		return nil, shared.NewError(shared.CodeInternal, "database is not configured", http.StatusInternalServerError)
+		return nil, shared.ErrInternal("database is not configured")
 	}
+	spanCtx, span := runtime.StartSpan(ctx, r.logger, "postgres.example.list")
+	defer func() {
+		span.End(err, "db.system", "postgres", "db.operation", "select_many", "db.table", "examples")
+	}()
 	rows, err := r.db.QueryContext(
-		ctx,
+		spanCtx,
 		`SELECT id, name, created_at, updated_at
 		 FROM examples
 		 ORDER BY created_at DESC, id DESC`,

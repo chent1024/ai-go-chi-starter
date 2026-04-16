@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
@@ -44,30 +43,6 @@ func writeAccessLog(req *http.Request, recorder *httpx.ResponseRecorder, started
 		"latency_ms", time.Since(startedAt).Milliseconds(),
 		"bytes_in", requestBytesIn(req),
 		"bytes_out", recorder.BytesWritten(),
-	)
-}
-
-func logRequestFailure(req *http.Request, status int, code string, retryable bool, err any) {
-	logger := httpx.RequestLogger(req, nil)
-	if logger == nil {
-		return
-	}
-	level := slog.LevelWarn
-	if status >= 500 {
-		level = slog.LevelError
-	}
-	logger.Log(
-		req.Context(),
-		level,
-		"http request failed",
-		"kind", "error",
-		"method", req.Method,
-		"route", routePattern(req),
-		"path", req.URL.Path,
-		"status", status,
-		shared.LogFieldErrorCode, code,
-		shared.LogFieldRetryable, retryable,
-		"err", err,
 	)
 }
 

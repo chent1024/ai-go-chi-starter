@@ -56,7 +56,7 @@ func TestExampleRepositoryGetNotFound(t *testing.T) {
 		WillReturnError(sql.ErrNoRows)
 
 	_, err = NewExampleRepository(db).Get(context.Background(), "exm_missing")
-	if shared.Code(err) != "EXAMPLE_NOT_FOUND" || shared.HTTPStatus(err) != http.StatusNotFound {
+	if shared.Code(err) != example.CodeNotFound || shared.HTTPStatus(err) != http.StatusNotFound {
 		t.Fatalf("unexpected error = %v", err)
 	}
 }
@@ -106,5 +106,21 @@ func TestExampleRepositoryGetWrapsUnexpectedError(t *testing.T) {
 	_, err = NewExampleRepository(db).Get(context.Background(), "exm_01")
 	if err == nil || shared.Code(err) != "" {
 		t.Fatalf("unexpected error = %v", err)
+	}
+}
+
+func TestExampleRepositoryGetRespectsCanceledContext(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New() error = %v", err)
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err = NewExampleRepository(db).Get(ctx, "exm_01")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("Get() error = %v, want context.Canceled", err)
 	}
 }

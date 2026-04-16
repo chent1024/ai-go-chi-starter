@@ -5,8 +5,9 @@
 ## 特性
 
 - 基于 `chi` 的 HTTP 路由，内置 request ID、trace、recover、access log middleware
+- 提供 body limit、安全响应头、`/version`、`/metrics` 等产品级 HTTP 基线
 - 所有环境变量统一在 `internal/config` 中读取和校验
-- 基于 `slog` 的运行时日志，支持标准输出、文件输出和 outbound logging
+- 基于 `slog` 的运行时日志，支持标准输出、文件输出、基础脱敏、request/trace 上下文和 outbound logging
 - 明确区分 `transport`、`service`、`infra`，避免 handler/service/repository 职责混乱
 - 提供 PostgreSQL repository 示例和 SQL migration
 - 提供 API、worker、migrate 三个基础进程入口
@@ -59,6 +60,7 @@ make run-worker
 - `make build-api`
 - `make build-worker`
 - `make build-migrate`
+- `make release-build`
 - `make run-api`
 - `make run-worker`
 - `make migrate`
@@ -67,8 +69,45 @@ make run-worker
 - `make dev-down`
 - `make dev-logs`
 - `make dev-ps`
+- `make test-integration`
+- `make smoke`
 
 ## 验证
 
 - `make verify`
 - `make verify-strict`
+- `make test-integration`
+- `make smoke`
+
+## Release 构建
+
+- 本地开发构建默认输出到 `bin/`
+- 统一发布构建使用 `make release-build`
+- 发布产物固定输出到 `dist/<VERSION>/<TARGET_OS>-<TARGET_ARCH>/`
+- `/version` 的 `version`、`commit`、`build_time` 都来自 `VERSION`、`COMMIT`、`BUILD_TIME` 这组 Make 变量
+
+示例：
+
+```bash
+make release-build VERSION=v0.1.0 TARGET_OS=linux TARGET_ARCH=amd64
+```
+
+产物目录示例：
+
+```text
+dist/v0.1.0/linux-amd64/api
+dist/v0.1.0/linux-amd64/worker
+dist/v0.1.0/linux-amd64/migrate
+```
+
+补充说明：
+
+- `go run ./cmd/api` 或普通开发场景下，`/version` 通常显示 `dev/unknown/unknown`
+- 通过 `make build*` 或 `make release-build*` 构建时，会统一注入真实 build 信息
+
+## 默认管理端点
+
+- `GET /healthz`
+- `GET /readyz`
+- `GET /version`
+- `GET /metrics`

@@ -5,14 +5,16 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	migrations "ai-go-chi-starter/db"
 	"ai-go-chi-starter/internal/config"
 	"ai-go-chi-starter/internal/infra/store/postgres"
+	"ai-go-chi-starter/internal/runtime"
 )
 
 func main() {
@@ -21,31 +23,34 @@ func main() {
 	flag.StringVar(&action, "action", "up", "migration action: up, version")
 	flag.Parse()
 
+	logger := runtime.NewBootstrapLogger("migrate", os.Stderr)
 	cfg, err := config.Load()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "load migrate config: %v\n", err)
+		logger.Error("migrate bootstrap failed", "kind", "fatal", "stage", "config", "err", err)
 		os.Exit(1)
 	}
 
 	db, err := postgres.Open(context.Background(), cfg.Database)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "open database: %v\n", err)
+		logger.Error("migrate startup failed", "kind", "fatal", "stage", "database", "err", err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
 	runner := Runner{
 		db:            db,
-		migrationsDir: filepath.Join(".", "db", "migrations"),
+		migrationsFS:  migrations.FS,
+		migrationsDir: "migrations",
 	}
 	if err := runner.Run(context.Background(), action); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "run migrations: %v\n", err)
+		logger.Error("migrate command failed", "kind", "fatal", "action", action, "err", err)
 		os.Exit(1)
 	}
 }
 
 type Runner struct {
 	db            *sql.DB
+	migrationsFS  fs.FS
 	migrationsDir string
 }
 
@@ -103,7 +108,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 }
 
 func (r Runner) up(ctx context.Context) error {
-	names, err := migrationNames(r.migrationsDir)
+	names, err := migrationNamesFromFS(r.filesystem(), r.migrationsDir)
 	if err != nil {
 		return err
 	}
@@ -127,7 +132,7 @@ func (r Runner) up(ctx context.Context) error {
 }
 
 func (r Runner) applyFile(ctx context.Context, name string, version int64) error {
-	content, err := os.ReadFile(filepath.Join(r.migrationsDir, name))
+	content, err := fs.ReadFile(r.filesystem(), r.migrationPath(name))
 	if err != nil {
 		return err
 	}
@@ -178,7 +183,11 @@ func (r Runner) isApplied(ctx context.Context, version int64) (bool, error) {
 }
 
 func migrationNames(migrationsDir string) ([]string, error) {
-	entries, err := os.ReadDir(migrationsDir)
+	return migrationNamesFromFS(os.DirFS("."), migrationsDir)
+}
+
+func migrationNamesFromFS(filesystem fs.FS, migrationsDir string) ([]string, error) {
+	entries, err := fs.ReadDir(filesystem, migrationsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -191,6 +200,20 @@ func migrationNames(migrationsDir string) ([]string, error) {
 	}
 	sort.Strings(names)
 	return names, nil
+}
+
+func (r Runner) filesystem() fs.FS {
+	if r.migrationsFS != nil {
+		return r.migrationsFS
+	}
+	return os.DirFS(".")
+}
+
+func (r Runner) migrationPath(name string) string {
+	if strings.TrimSpace(r.migrationsDir) == "" {
+		return name
+	}
+	return strings.TrimPrefix(r.migrationsDir+"/"+name, "/")
 }
 
 func parseVersion(name string) (int64, error) {

@@ -7,6 +7,7 @@ type Error struct {
 	message    string
 	retryable  bool
 	httpStatus int
+	details    any
 	err        error
 }
 
@@ -15,6 +16,12 @@ type ErrorOption func(*Error)
 func WithRetryable(retryable bool) ErrorOption {
 	return func(target *Error) {
 		target.retryable = retryable
+	}
+}
+
+func WithDetails(details any) ErrorOption {
+	return func(target *Error) {
+		target.details = details
 	}
 }
 
@@ -41,7 +48,11 @@ func MarkRetryable(err error) error {
 	if err == nil {
 		return nil
 	}
-	return Wrap(err, Code(err), Message(err), HTTPStatus(err), WithRetryable(true))
+	options := []ErrorOption{WithRetryable(true)}
+	if details := Details(err); details != nil {
+		options = append(options, WithDetails(details))
+	}
+	return Wrap(err, Code(err), Message(err), HTTPStatus(err), options...)
 }
 
 func (e *Error) Error() string {
@@ -97,4 +108,12 @@ func HTTPStatus(err error) int {
 		return target.httpStatus
 	}
 	return 0
+}
+
+func Details(err error) any {
+	var target *Error
+	if errors.As(err, &target) {
+		return target.details
+	}
+	return nil
 }

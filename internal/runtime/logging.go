@@ -19,7 +19,7 @@ func NewLogger(cfg config.LoggingConfig, service string, stdout io.Writer) (*slo
 			if attr.Key == slog.TimeKey && attr.Value.Kind() == slog.KindTime {
 				return slog.Time(slog.TimeKey, attr.Value.Time().In(logLocation(cfg.Location)))
 			}
-			return attr
+			return redactAttr(attr)
 		},
 	}
 

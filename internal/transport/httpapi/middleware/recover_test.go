@@ -31,4 +31,7 @@ func TestRecoverWritesEnvelope(t *testing.T) {
 	if env.Code != shared.CodeInternal || env.RequestID == "" {
 		t.Fatalf("unexpected envelope = %+v", env)
 	}
+	if !bytes.Contains(logs.Bytes(), []byte(`"stack":"`)) {
+		t.Fatalf("recover log missing stack: %s", logs.String())
+	}
 }

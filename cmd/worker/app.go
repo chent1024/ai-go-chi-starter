@@ -25,8 +25,10 @@ type application struct {
 }
 
 func run(ctx context.Context) error {
+	bootstrapLogger := runtime.NewBootstrapLogger("worker", os.Stderr)
 	cfg, err := config.Load()
 	if err != nil {
+		bootstrapLogger.Error("worker bootstrap failed", "kind", "fatal", "stage", "config", "err", err)
 		return fmt.Errorf("load config: %w", err)
 	}
 
@@ -43,6 +45,9 @@ func run(ctx context.Context) error {
 
 	select {
 	case err := <-errCh:
+		if err != nil {
+			app.logger.Error("worker exited unexpectedly", "err", err, "inflight_jobs", app.activeJobs.Load())
+		}
 		return err
 	case <-ctx.Done():
 		app.logger.Info("worker shutdown requested", "reason", ctx.Err(), "inflight_jobs", app.activeJobs.Load())
@@ -122,7 +127,9 @@ func (w tickerWorker) Run(ctx context.Context) error {
 			if w.activeJobs != nil {
 				w.activeJobs.Add(1)
 			}
-			err := w.handler.Handle(ctx)
+			jobCtx, span := runtime.StartSpan(ctx, w.logger, "worker.job.handle")
+			err := w.handler.Handle(jobCtx)
+			span.End(err)
 			if w.activeJobs != nil {
 				w.activeJobs.Add(-1)
 			}

@@ -72,6 +72,17 @@ func newLoggingRoundTripper(
 	target string,
 ) http.RoundTripper {
 	return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		if req == nil {
+			return base.RoundTrip(req)
+		}
+		spanCtx, span := runtime.StartSpan(
+			req.Context(),
+			logger,
+			"outbound.http.roundtrip",
+			"target", target,
+			"method", req.Method,
+		)
+		req = req.Clone(spanCtx)
 		req = withTraceparent(req)
 		startedAt := time.Now()
 		resp, err := base.RoundTrip(req)
@@ -89,11 +100,18 @@ func newLoggingRoundTripper(
 		if err != nil {
 			event.Err = err
 		}
+		spanLogger := span.Logger()
 		if err != nil {
-			runtime.LogOutboundFailure(logger, cfg, event)
+			runtime.LogOutboundFailure(spanLogger, cfg, event)
 		} else {
-			runtime.LogOutboundSuccess(logger, cfg, event)
+			runtime.LogOutboundSuccess(spanLogger, cfg, event)
 		}
+		span.End(
+			err,
+			"target", target,
+			"method", req.Method,
+			runtime.LogFieldStatus, event.Status,
+		)
 		return resp, err
 	})
 }

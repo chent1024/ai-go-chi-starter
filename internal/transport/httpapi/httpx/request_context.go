@@ -30,6 +30,9 @@ func RequestID(req *http.Request) string {
 	if value := strings.TrimSpace(req.Header.Get("X-Request-ID")); value != "" {
 		return value
 	}
+	if value, ok := shared.RequestIDFromContext(req.Context()); ok {
+		return value
+	}
 	return ""
 }
 

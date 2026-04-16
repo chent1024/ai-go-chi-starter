@@ -2,14 +2,16 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
+	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
-func RequestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
+func RequestTimeout(timeout time.Duration, logger *slog.Logger, metrics *runtime.Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		if timeout <= 0 {
 			return next
@@ -18,8 +20,26 @@ func RequestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
 			ctx, cancel := context.WithTimeout(req.Context(), timeout)
 			defer cancel()
 
-			recorder := httpx.NewResponseRecorder(w)
-			next.ServeHTTP(recorder, req.WithContext(ctx))
+			req = req.WithContext(ctx)
+			recorder := httpx.NewDeadlineAwareResponseRecorder(w, ctx)
+			next.ServeHTTP(recorder, req)
+
+			if lateWrites := recorder.LateWriteCount(); ctx.Err() == context.DeadlineExceeded && lateWrites > 0 {
+				if metrics != nil {
+					metrics.ObserveTimeoutLateWrite(routePattern(req), lateWrites)
+				}
+				requestLogger := httpx.RequestLogger(req, logger)
+				if requestLogger != nil {
+					requestLogger.Warn(
+						"request timed out after handler continued writing",
+						"kind", "timeout",
+						"method", req.Method,
+						"route", routePattern(req),
+						"path", req.URL.Path,
+						"late_write_count", lateWrites,
+					)
+				}
+			}
 
 			if ctx.Err() == context.DeadlineExceeded && !recorder.Written() {
 				httpx.WriteRequestError(

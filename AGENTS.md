@@ -78,4 +78,6 @@
 - 新增 env key 时，只能在 `internal/config/config.go` 读取，并同步 `.env.example`、`deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/config.md`
 - 新增 API 路由或响应字段时，必须同步 `docs/api.md` 和 `openapi/openapi.yaml`
 - 新增或调整保留错误码时，必须同步 `docs/errors.md`
+- 所有长耗时逻辑必须接受并向下传递 `context.Context`，service / repository / outbound client / worker handler 都必须尊重 `ctx.Done()`
+- 数据库访问必须优先使用 `QueryContext` / `ExecContext` / `BeginTx` 这类 context 版本 API；出站 HTTP 必须使用 `NewRequestWithContext`
 <!-- rules:user:end -->

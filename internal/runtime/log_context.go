@@ -18,6 +18,9 @@ func WithContext(logger *slog.Logger, ctx context.Context) *slog.Logger {
 	if logger == nil || ctx == nil {
 		return logger
 	}
+	if requestID, ok := shared.RequestIDFromContext(ctx); ok {
+		logger = WithRequestID(logger, requestID)
+	}
 	trace, ok := shared.TraceFromContext(ctx)
 	if !ok {
 		return logger

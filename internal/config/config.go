@@ -35,6 +35,7 @@ type APIConfig struct {
 	IdleTimeout     time.Duration
 	RequestTimeout  time.Duration
 	MaxHeaderBytes  int
+	MaxBodyBytes    int64
 }
 
 type WorkerConfig struct {
@@ -89,6 +90,8 @@ func Load() (Config, error) {
 	apiRequestTimeout, err := durationFromEnv("APP_API_REQUEST_TIMEOUT", 30*time.Second)
 	parseErrs = appendErr(parseErrs, err)
 	apiMaxHeaderBytes, err := intFromEnv("APP_API_MAX_HEADER_BYTES", 1<<20)
+	parseErrs = appendErr(parseErrs, err)
+	apiMaxBodyBytes, err := int64FromEnv("APP_API_MAX_BODY_BYTES", 1<<20)
 	parseErrs = appendErr(parseErrs, err)
 	databaseMaxOpenConns, err := intFromEnv("APP_DATABASE_MAX_OPEN_CONNS", 25)
 	parseErrs = appendErr(parseErrs, err)
@@ -163,6 +166,7 @@ func Load() (Config, error) {
 			IdleTimeout:     apiIdleTimeout,
 			RequestTimeout:  apiRequestTimeout,
 			MaxHeaderBytes:  apiMaxHeaderBytes,
+			MaxBodyBytes:    apiMaxBodyBytes,
 		},
 		Worker: WorkerConfig{
 			Enabled:         workerEnabled,
@@ -231,6 +235,9 @@ func (c Config) Validate() error {
 	}
 	if c.API.MaxHeaderBytes <= 0 {
 		errs = append(errs, errors.New("APP_API_MAX_HEADER_BYTES must be positive"))
+	}
+	if c.API.MaxBodyBytes <= 0 {
+		errs = append(errs, errors.New("APP_API_MAX_BODY_BYTES must be positive"))
 	}
 	if c.Database.MaxOpenConns <= 0 {
 		errs = append(errs, errors.New("APP_DATABASE_MAX_OPEN_CONNS must be positive"))
@@ -330,6 +337,18 @@ func intFromEnv(key string, fallback int) (int, error) {
 		return fallback, nil
 	}
 	parsed, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", key, err)
+	}
+	return parsed, nil
+}
+
+func int64FromEnv(key string, fallback int64) (int64, error) {
+	value, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback, nil
+	}
+	parsed, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", key, err)
 	}

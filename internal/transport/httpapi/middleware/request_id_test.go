@@ -4,12 +4,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"ai-go-chi-starter/internal/service/shared"
 )
 
 func TestRequestIDGeneratesHeader(t *testing.T) {
 	handler := RequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Request-Id") == "" {
 			t.Fatal("request id header missing in request")
+		}
+		if requestID, ok := shared.RequestIDFromContext(r.Context()); !ok || requestID == "" {
+			t.Fatal("request id missing from context")
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -26,6 +31,9 @@ func TestRequestIDPreservesInboundHeader(t *testing.T) {
 	handler := RequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Request-Id"); got != "req_inbound" {
 			t.Fatalf("request id = %q", got)
+		}
+		if got, ok := shared.RequestIDFromContext(r.Context()); !ok || got != "req_inbound" {
+			t.Fatalf("context request id = %q", got)
 		}
 	}))
 

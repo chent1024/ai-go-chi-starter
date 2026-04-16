@@ -22,6 +22,7 @@ func TestLoadUsesDefaults(t *testing.T) {
 		"APP_API_IDLE_TIMEOUT",
 		"APP_API_REQUEST_TIMEOUT",
 		"APP_API_MAX_HEADER_BYTES",
+		"APP_API_MAX_BODY_BYTES",
 		"APP_WORKER_ENABLED",
 		"APP_WORKER_POLL_INTERVAL",
 		"APP_WORKER_SHUTDOWN_TIMEOUT",
@@ -70,7 +71,8 @@ func TestLoadUsesDefaults(t *testing.T) {
 		cfg.API.WriteTimeout != 30*time.Second ||
 		cfg.API.IdleTimeout != 60*time.Second ||
 		cfg.API.RequestTimeout != 30*time.Second ||
-		cfg.API.MaxHeaderBytes != 1<<20 {
+		cfg.API.MaxHeaderBytes != 1<<20 ||
+		cfg.API.MaxBodyBytes != 1<<20 {
 		t.Fatalf("unexpected API timeout defaults: %+v", cfg.API)
 	}
 	if !cfg.Worker.Enabled || cfg.Worker.PollInterval != 5*time.Second {
@@ -119,6 +121,7 @@ func TestLoadAppliesOverrides(t *testing.T) {
 	setEnv(t, "APP_API_IDLE_TIMEOUT", "75s")
 	setEnv(t, "APP_API_REQUEST_TIMEOUT", "9s")
 	setEnv(t, "APP_API_MAX_HEADER_BYTES", "2097152")
+	setEnv(t, "APP_API_MAX_BODY_BYTES", "3145728")
 	setEnv(t, "APP_WORKER_ENABLED", "false")
 	setEnv(t, "APP_WORKER_POLL_INTERVAL", "11s")
 	setEnv(t, "APP_WORKER_SHUTDOWN_TIMEOUT", "25s")
@@ -166,7 +169,8 @@ func TestLoadAppliesOverrides(t *testing.T) {
 		cfg.API.WriteTimeout != 40*time.Second ||
 		cfg.API.IdleTimeout != 75*time.Second ||
 		cfg.API.RequestTimeout != 9*time.Second ||
-		cfg.API.MaxHeaderBytes != 2097152 {
+		cfg.API.MaxHeaderBytes != 2097152 ||
+		cfg.API.MaxBodyBytes != 3145728 {
 		t.Fatalf("unexpected API timeout config: %+v", cfg.API)
 	}
 	if cfg.Worker.Enabled || cfg.Worker.PollInterval != 11*time.Second {
@@ -200,6 +204,7 @@ func TestLoadAppliesOverrides(t *testing.T) {
 
 func TestLoadReturnsParseErrors(t *testing.T) {
 	setEnv(t, "APP_API_SHUTDOWN_TIMEOUT", "bad")
+	setEnv(t, "APP_API_MAX_BODY_BYTES", "bad")
 	setEnv(t, "APP_DATABASE_MAX_OPEN_CONNS", "bad")
 	setEnv(t, "APP_WORKER_ENABLED", "bad")
 	setEnv(t, "APP_LOG_RETENTION_DAYS", "bad")

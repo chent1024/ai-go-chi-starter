@@ -22,7 +22,7 @@ type OutboundLogEvent struct {
 }
 
 func LogOutboundSuccess(logger *slog.Logger, cfg config.LoggingConfig, event OutboundLogEvent) {
-	if !cfg.OutboundEnabled {
+	if !cfg.OutboundEnabled || logger == nil {
 		return
 	}
 	level := parseLevel(cfg.OutboundLevel)

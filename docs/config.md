@@ -19,6 +19,7 @@
 | `APP_API_IDLE_TIMEOUT` | `60s` | HTTP keep-alive 空闲超时。 |
 | `APP_API_REQUEST_TIMEOUT` | `30s` | 每个请求的 context timeout middleware。 |
 | `APP_API_MAX_HEADER_BYTES` | `1048576` | HTTP 请求头最大大小。 |
+| `APP_API_MAX_BODY_BYTES` | `1048576` | HTTP 请求体最大大小。 |
 | `APP_WORKER_ENABLED` | `true` | 是否启用 worker loop。 |
 | `APP_WORKER_POLL_INTERVAL` | `5s` | Worker ticker 间隔。 |
 | `APP_WORKER_SHUTDOWN_TIMEOUT` | `10s` | Worker graceful shutdown 超时。 |
@@ -30,7 +31,7 @@
 | `APP_LOG_CLEANUP_INTERVAL` | `1h` | 文件日志清理 ticker 间隔。 |
 | `APP_LOG_ACCESS_ENABLED` | `true` | 是否开启 HTTP access log。 |
 | `APP_LOG_SOURCE_ENABLED` | `false` | 是否开启 slog source 信息。 |
-| `APP_LOG_OUTBOUND_ENABLED` | `true` | 是否开启 outbound request logging。 |
+| `APP_LOG_OUTBOUND_ENABLED` | `true` | 是否开启 outbound 成功请求日志；失败请求仍会以 `warn/error` 输出。 |
 | `APP_LOG_OUTBOUND_LEVEL` | `debug` | outbound 成功请求的日志级别。 |
 | `APP_OUTBOUND_TIMEOUT` | `30s` | 单次 outbound HTTP 请求的整体超时。 |
 | `APP_OUTBOUND_MAX_IDLE_CONNS` | `100` | outbound keep-alive 全局最大空闲连接数。 |
@@ -56,6 +57,7 @@
 
 - shutdown 和 poll duration 必须为正数
 - API timeout 和 max header bytes 必须为正数
+- API max body bytes 必须为正数
 - 数据库连接池参数必须合法，且 idle 不能大于 open
 - 数据库连接生命周期参数必须为正数
 - 日志枚举值必须合法

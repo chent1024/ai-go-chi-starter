@@ -39,5 +39,10 @@ func bypassDrain(req *http.Request) bool {
 	if req == nil {
 		return false
 	}
-	return req.URL.Path == "/healthz" || req.URL.Path == "/readyz"
+	switch req.URL.Path {
+	case "/healthz", "/readyz", "/version", "/metrics":
+		return true
+	default:
+		return false
+	}
 }

@@ -16,18 +16,13 @@ func WriteRequestDomainError(w http.ResponseWriter, req *http.Request, err error
 	}
 	code := shared.Code(err)
 	status := shared.HTTPStatus(err)
+	details := shared.Details(err)
 	if code == "" || status == 0 {
-		WriteRequestError(
-			w,
-			req,
-			http.StatusInternalServerError,
-			shared.CodeInternal,
-			"internal server error",
-			shared.Retryable(err),
-		)
+		logRequestFailure(req, http.StatusInternalServerError, shared.CodeInternal, shared.Retryable(err), err, nil)
+		WriteError(w, http.StatusInternalServerError, RequestID(req), shared.CodeInternal, "internal server error", shared.Retryable(err))
 		return
 	}
-	WriteRequestError(w, req, status, code, shared.Message(err), shared.Retryable(err))
+	WriteRequestError(w, req, status, code, shared.Message(err), shared.Retryable(err), details)
 }
 
 func WriteRequestError(
@@ -36,18 +31,20 @@ func WriteRequestError(
 	status int,
 	code, message string,
 	retryable bool,
+	details ...any,
 ) {
 	requestID := ""
 	if req != nil {
 		requestID = RequestID(req)
-		logRequestFailure(req, status, code, retryable, message)
+		logRequestFailure(req, status, code, retryable, message, firstDetail(details))
 	}
-	WriteError(w, status, requestID, code, message, retryable)
+	WriteError(w, status, requestID, code, message, retryable, details...)
 }
 
 func WriteDomainError(w http.ResponseWriter, requestID string, err error) {
 	code := shared.Code(err)
 	status := shared.HTTPStatus(err)
+	details := shared.Details(err)
 	if code == "" || status == 0 {
 		WriteError(
 			w,
@@ -59,10 +56,10 @@ func WriteDomainError(w http.ResponseWriter, requestID string, err error) {
 		)
 		return
 	}
-	WriteError(w, status, requestID, code, shared.Message(err), shared.Retryable(err))
+	WriteError(w, status, requestID, code, shared.Message(err), shared.Retryable(err), details)
 }
 
-func logRequestFailure(req *http.Request, status int, code string, retryable bool, err any) {
+func logRequestFailure(req *http.Request, status int, code string, retryable bool, err any, details any) {
 	logger := RequestLogger(req, nil)
 	if logger == nil {
 		return
@@ -83,6 +80,7 @@ func logRequestFailure(req *http.Request, status int, code string, retryable boo
 		shared.LogFieldErrorCode, code,
 		shared.LogFieldRetryable, retryable,
 		"err", err,
+		"details", details,
 	)
 }
 

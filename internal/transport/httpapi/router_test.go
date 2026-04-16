@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"ai-go-chi-starter/internal/config"
@@ -71,6 +72,78 @@ func TestRouterReadyzFailure(t *testing.T) {
 
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d", rec.Code)
+	}
+}
+
+func TestRouterVersion(t *testing.T) {
+	handler := NewRouter(RouterOptions{
+		Logging: config.LoggingConfig{AccessEnabled: true},
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		BuildInfo: runtime.BuildInfo{
+			Service:   "api",
+			Version:   "1.2.3",
+			Commit:    "abc123",
+			BuildTime: "2026-04-16T12:00:00Z",
+		},
+	})
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/version", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `"version":"1.2.3"`) {
+		t.Fatalf("version body = %s", rec.Body.String())
+	}
+}
+
+func TestRouterMetrics(t *testing.T) {
+	metrics := runtime.NewMetrics(runtime.BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
+	handler := NewRouter(RouterOptions{
+		Logging: config.LoggingConfig{AccessEnabled: true},
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Metrics: metrics,
+	})
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("healthz status = %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("metrics status = %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `http_requests_total{route="/healthz",method="GET",status="200"} 1`) {
+		t.Fatalf("metrics body = %s", rec.Body.String())
+	}
+	for _, want := range []string{"http_requests_in_flight 1", "process_uptime_seconds ", `http_request_duration_ms_max{route="/healthz",method="GET",status="200"}`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Fatalf("metrics body missing %q: %s", want, rec.Body.String())
+		}
+	}
+}
+
+func TestRouterAppliesSecurityHeaders(t *testing.T) {
+	handler := NewRouter(RouterOptions{
+		Logging: config.LoggingConfig{AccessEnabled: true},
+		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+
+	if got := rec.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("X-Content-Type-Options = %q", got)
+	}
+	if got := rec.Header().Get("X-Frame-Options"); got != "DENY" {
+		t.Fatalf("X-Frame-Options = %q", got)
+	}
+	if got := rec.Header().Get("Referrer-Policy"); got != "no-referrer" {
+		t.Fatalf("Referrer-Policy = %q", got)
 	}
 }
 

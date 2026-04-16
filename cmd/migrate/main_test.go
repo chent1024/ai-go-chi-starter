@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
-	"path/filepath"
 	"regexp"
 	"testing"
+	"testing/fstest"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 		WithArgs(migrationLockKey).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
-	runner := Runner{db: db, migrationsDir: filepath.Join(".", "db", "migrations")}
+	runner := Runner{db: db, migrationsFS: fstest.MapFS{}, migrationsDir: "migrations"}
 	if err := runner.Run(context.Background(), "version"); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
@@ -53,5 +53,27 @@ func TestRunnerRunFailsWhenLockAlreadyHeld(t *testing.T) {
 	runner := Runner{db: db}
 	if err := runner.Run(context.Background(), "version"); err == nil {
 		t.Fatal("Run() error = nil, want advisory lock error")
+	}
+}
+
+func TestMigrationNamesFromFS(t *testing.T) {
+	filesystem := fstest.MapFS{
+		"migrations/001_init.sql": {Data: []byte("select 1;")},
+		"migrations/010_more.sql": {Data: []byte("select 2;")},
+		"migrations/readme.md":    {Data: []byte("ignore")},
+	}
+
+	names, err := migrationNamesFromFS(filesystem, "migrations")
+	if err != nil {
+		t.Fatalf("migrationNamesFromFS() error = %v", err)
+	}
+	want := []string{"001_init.sql", "010_more.sql"}
+	if len(names) != len(want) {
+		t.Fatalf("migrationNamesFromFS() len = %d, want %d", len(names), len(want))
+	}
+	for i := range want {
+		if names[i] != want[i] {
+			t.Fatalf("migrationNamesFromFS()[%d] = %q, want %q", i, names[i], want[i])
+		}
 	}
 }

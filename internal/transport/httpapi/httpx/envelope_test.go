@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,6 +18,44 @@ func TestDecodeJSONRejectsUnknownFields(t *testing.T) {
 	err := DecodeJSON(body, &payload)
 	if err == nil {
 		t.Fatal("DecodeJSON() error = nil, want unknown field error")
+	}
+}
+
+func TestDecodeJSONRejectsMultipleDocuments(t *testing.T) {
+	body := ioNopCloser{Reader: strings.NewReader(`{"name":"demo"}{"name":"extra"}`)}
+	var payload struct {
+		Name string `json:"name"`
+	}
+
+	err := DecodeJSON(body, &payload)
+	if !errors.Is(err, ErrMultipleJSONDocuments) {
+		t.Fatalf("DecodeJSON() error = %v, want ErrMultipleJSONDocuments", err)
+	}
+}
+
+func TestHasJSONContentType(t *testing.T) {
+	testCases := []struct {
+		name        string
+		contentType string
+		want        bool
+	}{
+		{name: "json", contentType: "application/json", want: true},
+		{name: "json with charset", contentType: "application/json; charset=utf-8", want: true},
+		{name: "missing", contentType: "", want: false},
+		{name: "invalid", contentType: `application/json; charset="utf-8`, want: false},
+		{name: "text plain", contentType: "text/plain", want: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/v1/examples", nil)
+			if tc.contentType != "" {
+				req.Header.Set("Content-Type", tc.contentType)
+			}
+			if got := HasJSONContentType(req); got != tc.want {
+				t.Fatalf("HasJSONContentType() = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
 

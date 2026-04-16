@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
@@ -18,6 +19,7 @@ func RequestID(next http.Handler) http.Handler {
 			requestID = nextRequestID()
 			req.Header.Set(httpx.RequestIDHeader, requestID)
 		}
+		httpx.ReplaceRequestContext(req, shared.WithRequestID(req.Context(), requestID))
 		w.Header().Set(httpx.RequestIDHeader, requestID)
 		next.ServeHTTP(w, req)
 	})

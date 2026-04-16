@@ -14,13 +14,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/HealthEnvelope'
         '504':
           description: 请求超时
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
   /readyz:
     get:
       summary: 就绪探针
@@ -30,19 +30,39 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ReadyEnvelope'
         '503':
           description: 未就绪
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
         '504':
           description: 请求超时
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /version:
+    get:
+      summary: 返回当前 API build 信息
+      responses:
+        '200':
+          description: build 信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildInfoEnvelope'
+  /metrics:
+    get:
+      summary: 返回 Prometheus 文本指标
+      responses:
+        '200':
+          description: Prometheus 指标
+          content:
+            text/plain:
+              schema:
+                type: string
   /v1/examples:
     get:
       summary: 获取 example 列表
@@ -52,19 +72,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ExampleListEnvelope'
         '503':
           description: 服务正在 draining 或尚未就绪
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
         '504':
           description: 请求超时
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
     post:
       summary: 创建 example
       requestBody:
@@ -79,25 +99,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ExampleEnvelope'
         '400':
           description: 请求不合法
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '413':
+          description: 请求体超过大小限制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '415':
+          description: Content-Type 不是 application/json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
         '503':
           description: 服务正在 draining 或尚未就绪
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
         '504':
           description: 请求超时
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
   /v1/examples/{id}:
     get:
       summary: 按 id 获取 example
@@ -113,33 +145,52 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ExampleEnvelope'
         '404':
           description: 未找到
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
         '503':
           description: 服务正在 draining 或尚未就绪
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
         '504':
           description: 请求超时
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Envelope'
+                $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
-    Envelope:
+    SuccessEnvelopeBase:
       type: object
       required:
         - code
         - message
         - request_id
+        - data
+      properties:
+        code:
+          type: string
+          enum:
+            - OK
+        message:
+          type: string
+        request_id:
+          type: string
+        data: {}
+    ErrorEnvelope:
+      type: object
+      required:
+        - code
+        - message
+        - request_id
+        - data
+        - retryable
       properties:
         code:
           type: string
@@ -147,17 +198,67 @@ components:
           type: string
         request_id:
           type: string
+        data:
+          type: 'null'
+        details:
+          $ref: '#/components/schemas/ErrorDetails'
         retryable:
           type: boolean
-        data:
-          oneOf:
-            - $ref: '#/components/schemas/Example'
-            - type: array
+    HealthEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelopeBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/HealthData'
+    ReadyEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelopeBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/ReadyData'
+    ExampleEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelopeBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Example'
+    ExampleListEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelopeBase'
+        - type: object
+          properties:
+            data:
+              type: array
               items:
                 $ref: '#/components/schemas/Example'
-            - type: object
-              additionalProperties: true
-            - type: 'null'
+    BuildInfoEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelopeBase'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/BuildInfo'
+    HealthData:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+    ReadyData:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ready
     CreateExampleRequest:
       type: object
       required:
@@ -183,3 +284,36 @@ components:
         updated_at:
           type: string
           format: date-time
+    BuildInfo:
+      type: object
+      required:
+        - service
+        - version
+        - commit
+        - build_time
+      properties:
+        service:
+          type: string
+        version:
+          type: string
+        commit:
+          type: string
+        build_time:
+          type: string
+    ErrorDetails:
+      type: object
+      properties:
+        field_errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string

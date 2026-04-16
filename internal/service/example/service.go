@@ -2,7 +2,6 @@ package example
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	"ai-go-chi-starter/internal/service/shared"
@@ -18,11 +17,14 @@ func NewService(repo Repository) *Service {
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (Example, error) {
 	if s.repo == nil {
-		return Example{}, shared.NewError(shared.CodeInternal, "repository is not configured", http.StatusInternalServerError)
+		return Example{}, shared.ErrInternal("repository is not configured")
 	}
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
-		return Example{}, shared.NewError(shared.CodeInvalidArgument, "name is required", http.StatusBadRequest)
+		return Example{}, shared.ErrInvalidArgument(
+			"name is required",
+			shared.WithFieldErrors(shared.RequiredField("name")),
+		)
 	}
 	item := Example{
 		ID:   shared.NewID("exm"),
@@ -33,17 +35,20 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (Example, error
 
 func (s *Service) Get(ctx context.Context, id string) (Example, error) {
 	if s.repo == nil {
-		return Example{}, shared.NewError(shared.CodeInternal, "repository is not configured", http.StatusInternalServerError)
+		return Example{}, shared.ErrInternal("repository is not configured")
 	}
 	if strings.TrimSpace(id) == "" {
-		return Example{}, shared.NewError(shared.CodeInvalidArgument, "id is required", http.StatusBadRequest)
+		return Example{}, shared.ErrInvalidArgument(
+			"id is required",
+			shared.WithFieldErrors(shared.RequiredField("id")),
+		)
 	}
 	return s.repo.Get(ctx, id)
 }
 
 func (s *Service) List(ctx context.Context) ([]Example, error) {
 	if s.repo == nil {
-		return nil, shared.NewError(shared.CodeInternal, "repository is not configured", http.StatusInternalServerError)
+		return nil, shared.ErrInternal("repository is not configured")
 	}
 	return s.repo.List(ctx)
 }
