@@ -1,0 +1,65 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+issues:
+  max-same-issues: 0
+  uniq-by-line: true
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errorlint
+        - funlen
+        - gosec
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - depguard
+    - errcheck
+    - errorlint
+    - forbidigo
+    - gosec
+    - govet
+    - funlen
+    - ineffassign
+    - lll
+    - misspell
+    - nolintlint
+    - staticcheck
+    - unconvert
+    - wastedassign
+    - whitespace
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        files:
+          - $all
+        deny:
+          - pkg: github.com/gin-gonic/gin$
+            desc: use the repository-standard HTTP stack
+          - pkg: github.com/labstack/echo/v4$
+            desc: use the repository-standard HTTP stack
+          - pkg: github.com/gofiber/fiber/v2$
+            desc: use the repository-standard HTTP stack
+          - pkg: github.com/pkg/errors$
+            desc: use stdlib errors and fmt.Errorf with %w
+  funlen:
+    lines: 120
+    statements: 60
+  forbidigo:
+    analyze-types: true
+    forbid:
+      - ^print(ln)?$
+      - p: ^fmt\.Print(f|ln)?$
+        msg: use explicit writers or structured logging
+      - p: ^http\.(Get|Post|PostForm|Head)$
+        msg: use an explicit http.Client with timeout and context
+      - p: ^http\.NewRequest$
+        msg: use http.NewRequestWithContext
+  lll:
+    line-length: 140
+    tab-width: 1

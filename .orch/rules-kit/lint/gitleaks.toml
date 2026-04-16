@@ -1,0 +1,20 @@
+title = "Shared Constraint Template"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key-assignment"
+description = "Potential hard-coded API key or token assignment"
+regex = '''(?i)(api[_-]?key|secret|token|signing[_-]?secret)\s*[:=]\s*["'][^"']{12,}["']'''
+keywords = ["api_key", "secret", "token", "signing_secret"]
+
+[allowlist]
+description = "Common placeholder values"
+regexes = [
+  '''replace-with-local-secret''',
+  '''your-api-key''',
+  '''change-me''',
+  '''example''',
+  '''dummy''',
+]

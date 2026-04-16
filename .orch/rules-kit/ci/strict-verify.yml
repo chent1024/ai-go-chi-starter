@@ -1,0 +1,26 @@
+# Example CI workflow for high-risk paths. Adapt to your CI platform and runtime image.
+name: strict-verify
+
+on:
+  pull_request:
+    paths:
+      - "db/migrations/**"
+      - "internal/runtime/**"
+      - "openapi/**"
+      - "rules-kit/**"
+      - ".orch/rules/**"
+
+jobs:
+  strict-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup toolchain
+        run: |
+          echo "Install your language/runtime dependencies here"
+
+      - name: Strict verify
+        run: |
+          ${STRICT_VERIFY_CMD:-make verify-strict}

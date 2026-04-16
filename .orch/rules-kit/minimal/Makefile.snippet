@@ -1,0 +1,11 @@
+.PHONY: verify-rules
+
+RULES_ENV ?= .orch/rules/repo/rules.env
+
+verify-rules:
+	bash .orch/rules/scripts/verify-config-docs.sh $(RULES_ENV)
+	bash .orch/rules/scripts/verify-generated.sh $(RULES_ENV)
+	bash .orch/rules/scripts/verify-secrets.sh $(RULES_ENV)
+
+# Example:
+# verify: verify-rules

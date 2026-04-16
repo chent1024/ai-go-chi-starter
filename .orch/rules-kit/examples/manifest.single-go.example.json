@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "repo_mode": "new",
+  "layout": "single",
+  "targets": [
+    {
+      "name": "service",
+      "language": "go",
+      "root": "."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+GO_MODULE_DIR ?= .
+TOOLS_BIN ?= $(CURDIR)/.tools/bin
+GOLANGCI_LINT ?= $(TOOLS_BIN)/golangci-lint
+GOLANGCI_LINT_VERSION ?= v1.64.8
+GOLANGCI_LINT_ARGS ?= --tests=false
+
+include .orch/rules/make/verify.mk
+
+.PHONY: fmt fmt-write lint test race bench tools verify verify-strict
+
+verify: fmt lint test race verify-config-docs verify-generated verify-secrets
+
+verify-strict: verify bench verify-contract-sync verify-migrations verify-arch
+
+fmt:
+	@out=$$(cd $(GO_MODULE_DIR) && gofmt -l $$(find . -type f -name '*.go' -not -path './.tools/*')); \
+	if [ -n "$$out" ]; then \
+		echo "gofmt required for:"; \
+		echo "$$out"; \
+		exit 1; \
+	fi
+
+fmt-write:
+	cd $(GO_MODULE_DIR) && gofmt -w $$(find . -type f -name '*.go' -not -path './.tools/*')
+
+lint: $(GOLANGCI_LINT)
+	cd $(GO_MODULE_DIR) && $(GOLANGCI_LINT) run $(GOLANGCI_LINT_ARGS) --config $(CURDIR)/.orch/rules/lint/.golangci.base.yml ./...
+
+test:
+	cd $(GO_MODULE_DIR) && go test ./...
+
+race:
+	cd $(GO_MODULE_DIR) && go test -race ./...
+
+bench:
+	cd $(GO_MODULE_DIR) && go test -run '^$$' -bench . -benchmem ./...
+
+tools: $(GOLANGCI_LINT)
+
+$(GOLANGCI_LINT):
+	mkdir -p $(TOOLS_BIN)
+	GOBIN=$(TOOLS_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)

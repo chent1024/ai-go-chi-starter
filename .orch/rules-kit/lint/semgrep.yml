@@ -1,0 +1,28 @@
+rules:
+  - id: no-http-default-client
+    languages: [go]
+    message: Use an explicit http.Client with Timeout instead of http.DefaultClient.
+    severity: ERROR
+    patterns:
+      - pattern: http.DefaultClient
+
+  - id: no-panic-in-production-go
+    languages: [go]
+    message: Return errors instead of panicking in production code.
+    severity: ERROR
+    paths:
+      exclude:
+        - "**/*_test.go"
+        - "**/internal/testutil/**"
+    patterns:
+      - pattern: panic(...)
+
+  - id: no-raw-sleep-in-production-go
+    languages: [go]
+    message: Prefer context-aware waits, timers, or injected clocks instead of time.Sleep.
+    severity: ERROR
+    paths:
+      exclude:
+        - "**/*_test.go"
+    patterns:
+      - pattern: time.Sleep(...)

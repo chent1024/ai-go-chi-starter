@@ -1,0 +1,22 @@
+# Example CI workflow. Adapt to your CI platform and runtime image.
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup toolchain
+        run: |
+          echo "Install your language/runtime dependencies here"
+
+      - name: Main verify
+        run: |
+          ${VERIFY_CMD:-make verify}

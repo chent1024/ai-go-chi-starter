@@ -1,0 +1,11 @@
+# Example architecture rule file consumed by verify-arch.sh
+#
+# go_imports backend format:
+# <scope>|<forbidden_scope>|<message>
+#
+# Examples:
+# app/internal/service|app/internal/transport|service must not depend on transport
+# app/internal/transport|app/internal/infra/store|transport must not depend on concrete stores
+#
+# text backend format:
+# <scope>|<regex>|<message>

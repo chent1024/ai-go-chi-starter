@@ -1,5 +1,4 @@
-<!-- rules:managed:start -->
-# 仓库约束
+# Go 仓库约束
 
 这个仓库不依赖 prompt 自觉执行规则。所有改动默认必须通过 `make verify`；涉及并发、性能、存储、队列、runtime wiring、契约或 migration 的改动，必须通过 `make verify-strict`。
 
@@ -35,7 +34,15 @@
 - 新增或修改代码时，默认保持函数和文件短小可拆分；避免把复杂逻辑堆进超长函数
 - 单个生产函数原则上不超过 80 行；单行原则上不超过 120 列，除非 URL、生成内容或无法拆分的字面量
 
-## 4. 契约与配置同步
+## 4. Go 规则
+
+- 优先使用标准库，除非仓库里已有依赖已经能更干净地解决问题
+- 在 I/O 路径中显式传递 `context.Context`，对外部调用使用有边界的上下文或明确的超时
+- 返回错误时使用 `%w` 包装；不要在生产代码中引入 `panic`
+- 保持 `cmd/` 入口足够薄，只做配置加载和 wiring 调用，不要在入口内直接拼装应用
+- 传输层、领域/服务层、基础设施/存储层和运行时 wiring 要分离；具体装配放在 wiring 层
+
+## 5. 契约与配置同步
 
 - 如果 API 行为、路由、请求/响应字段、鉴权要求、错误语义、配置加载、持久化行为、状态流转或并发行为发生变化，必须同步更新相关契约文件、文档和测试
 - 修改 API surface 目录下的文件时，先评估是否需要同步契约文件；不要等严格校验失败后再补 contract
@@ -43,10 +50,6 @@
 - 新增或调整配置项时，除了代码，还要同步 `.env.example`、相关配置文档，并在交付说明里列出新增 key、默认值和影响到的 runtime
 - 不要把“只改了代码”视为完成，前提是契约或配置文档已经过期
 - 是否完成以仓库内可执行的检查结果为准，而不是以主观判断为准
-
-## 5. 生成文件
-
-- 不要手工修改生成文件；应修改源输入并重新执行生成命令
 
 ## 6. 测试与安全
 
@@ -65,17 +68,3 @@
   2. 同步了哪些契约 / 配置 / 文档
   3. 实际执行了哪些验证
   4. 剩余风险、假设或缺口
-<!-- rules:managed:end -->
-
-<!-- rules:user:start -->
-## 8. Starter 模板放置约定
-
-- `cmd/api`、`cmd/worker`、`cmd/migrate` 只负责进程装配，不写业务规则
-- `internal/transport/httpapi/v1` 只放 handler 和 HTTP DTO，不直接操作 SQL 或业务状态机
-- `internal/service/<domain>` 放 domain model、service、repository interface
-- `internal/infra/store/postgres` 放 PostgreSQL 具体实现，不返回 HTTP DTO
-- `internal/runtime` 放日志、trace、outbound logging 等横切基础设施
-- 新增 env key 时，只能在 `internal/config/config.go` 读取，并同步 `.env.example`、`deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/config.md`
-- 新增 API 路由或响应字段时，必须同步 `docs/api.md` 和 `openapi/openapi.yaml`
-- 新增或调整保留错误码时，必须同步 `docs/errors.md`
-<!-- rules:user:end -->

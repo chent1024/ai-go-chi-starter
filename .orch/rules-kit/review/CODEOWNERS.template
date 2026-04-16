@@ -1,0 +1,7 @@
+# Replace placeholder teams or usernames with real owners.
+
+/openapi/ @api-owner
+/db/migrations/ @storage-owner
+/internal/runtime/ @architecture-owner
+/rules-kit/ @architecture-owner
+/.orch/rules/ @architecture-owner

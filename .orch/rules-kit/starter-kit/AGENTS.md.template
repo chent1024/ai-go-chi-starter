@@ -1,4 +1,3 @@
-<!-- rules:managed:start -->
 # 仓库约束
 
 这个仓库不依赖 prompt 自觉执行规则。所有改动默认必须通过 `make verify`；涉及并发、性能、存储、队列、runtime wiring、契约或 migration 的改动，必须通过 `make verify-strict`。
@@ -65,17 +64,3 @@
   2. 同步了哪些契约 / 配置 / 文档
   3. 实际执行了哪些验证
   4. 剩余风险、假设或缺口
-<!-- rules:managed:end -->
-
-<!-- rules:user:start -->
-## 8. Starter 模板放置约定
-
-- `cmd/api`、`cmd/worker`、`cmd/migrate` 只负责进程装配，不写业务规则
-- `internal/transport/httpapi/v1` 只放 handler 和 HTTP DTO，不直接操作 SQL 或业务状态机
-- `internal/service/<domain>` 放 domain model、service、repository interface
-- `internal/infra/store/postgres` 放 PostgreSQL 具体实现，不返回 HTTP DTO
-- `internal/runtime` 放日志、trace、outbound logging 等横切基础设施
-- 新增 env key 时，只能在 `internal/config/config.go` 读取，并同步 `.env.example`、`deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/config.md`
-- 新增 API 路由或响应字段时，必须同步 `docs/api.md` 和 `openapi/openapi.yaml`
-- 新增或调整保留错误码时，必须同步 `docs/errors.md`
-<!-- rules:user:end -->

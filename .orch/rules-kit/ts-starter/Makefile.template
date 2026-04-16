@@ -1,0 +1,16 @@
+include .orch/rules/make/verify.mk
+
+.PHONY: lint typecheck test verify verify-strict
+
+lint:
+	npm run lint
+
+typecheck:
+	npm run typecheck
+
+test:
+	npm run test
+
+verify: lint typecheck test verify-config-docs verify-generated verify-secrets
+
+verify-strict: verify verify-contract-sync verify-migrations verify-arch

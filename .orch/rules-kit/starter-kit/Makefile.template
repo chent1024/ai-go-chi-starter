@@ -1,0 +1,9 @@
+include .orch/rules/make/verify.mk
+
+# Example project-specific verify pipeline:
+#
+# .PHONY: verify verify-strict
+#
+# verify: fmt lint test verify-config-docs verify-generated verify-secrets
+#
+# verify-strict: verify verify-contract-sync verify-migrations verify-arch

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "repo_mode": "existing",
+  "layout": "monorepo",
+  "targets": [
+    {
+      "name": "backend",
+      "language": "go",
+      "root": "app"
+    },
+    {
+      "name": "frontend",
+      "language": "ts",
+      "root": "web"
+    }
+  ]
+}

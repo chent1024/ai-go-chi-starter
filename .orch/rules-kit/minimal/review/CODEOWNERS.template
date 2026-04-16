@@ -1,0 +1,3 @@
+/openapi/ @api-owner
+/db/migrations/ @storage-owner
+/internal/runtime/ @architecture-owner

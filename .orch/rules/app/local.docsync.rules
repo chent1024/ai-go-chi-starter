@@ -1,2 +1,6 @@
 # Repository-specific DOC_SYNC rule extensions preserved across upgrade.
 # Base file: .orch/rules/app/docsync.rules
+internal/config,.env.example|docs/config.md,deploy/.env.runtime.example,deploy/.env.dev.example|config changes must update config docs and env examples
+internal/transport/httpapi,openapi|docs/api.md,openapi/openapi.yaml|api changes must update docs and contract
+internal/service/example,internal/infra/store/postgres,db/migrations|docs/architecture.md|domain and storage changes must update architecture docs
+internal/service/shared,internal/transport/httpapi/httpx,internal/transport/httpapi/middleware|docs/errors.md|error code baseline changes must update docs/errors.md
