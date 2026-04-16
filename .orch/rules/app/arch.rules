@@ -1,0 +1,11 @@
+# format:
+# <scope>|<forbidden_scope>|<message>
+#
+# default layered Go service rules:
+# Add repository-specific extensions in .orch/rules/<target>/local.arch.rules.
+internal/service|internal/transport|service must not depend on transport
+internal/transport|internal/infra/store|transport must not depend on concrete stores
+internal/transport|internal/infra/objectstore|transport must not depend on object store adapters
+internal/transport|internal/infra/provider|transport must not depend on provider adapters
+internal/runtime|internal/transport|runtime must not depend on transport
+internal/infra|internal/transport|infrastructure must not depend on transport

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "repo_mode": "existing",
+  "layout": "single",
+  "targets": [
+    {
+      "name": "app",
+      "language": "go",
+      "root": ".",
+      "env_file": ".orch/rules/app/rules.env"
+    }
+  ]
+}

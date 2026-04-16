@@ -1,0 +1,2 @@
+# Repository-specific DOC_SYNC rule extensions preserved across upgrade.
+# Base file: .orch/rules/app/docsync.rules

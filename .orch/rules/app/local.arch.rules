@@ -1,0 +1,2 @@
+# Repository-specific ARCH rule extensions preserved across upgrade.
+# Base file: .orch/rules/app/arch.rules
