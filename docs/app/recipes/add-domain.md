@@ -6,24 +6,24 @@
 
 ## 需要新增或修改的文件
 
-1. `internal/service/<domain>/model.go`
-2. `internal/service/<domain>/repository.go`
-3. `internal/service/<domain>/service.go`
-4. 可选：`internal/service/<domain>/error_codes.go`
-5. `internal/infra/store/postgres/<domain>_repository.go`
-6. `internal/transport/httpapi/v1/<domain>_handler.go`
-7. `internal/transport/httpapi/router.go`
-8. `db/migrations/<nnn>_<domain>.sql`
-9. `docs/api.md`
-10. `openapi/openapi.yaml`
+1. `app/internal/service/<domain>/model.go`
+2. `app/internal/service/<domain>/repository.go`
+3. `app/internal/service/<domain>/service.go`
+4. 可选：`app/internal/service/<domain>/error_codes.go`
+5. `app/internal/infra/store/postgres/<domain>_repository.go`
+6. `app/internal/transport/httpapi/v1/<domain>_handler.go`
+7. `app/internal/transport/httpapi/router.go`
+8. `app/db/migrations/<nnn>_<domain>.sql`
+9. `docs/app/api.md`
+10. `app/openapi/openapi.yaml`
 11. 对应的 service / handler / repository tests
 
 ## 分层要求
 
 - handler 只做 request decode、response encode、错误写回
 - service 负责业务规则、输入校验、领域错误
-- repository interface 放在 `internal/service/<domain>`
-- postgres 实现放在 `internal/infra/store/postgres`
+- repository interface 放在 `app/internal/service/<domain>`
+- postgres 实现放在 `app/internal/infra/store/postgres`
 - transport DTO 不能穿透到 service / repository
 
 ## 推荐顺序
@@ -40,7 +40,7 @@
 
 ## 配置和契约同步
 
-- 如果新增 env，必须只在 `internal/config/config.go` 读取
+- 如果新增 env，必须只在 `app/internal/config/config.go` 读取
 - 如果新增路由、字段、错误码，必须同步文档和 OpenAPI
 - 如果改了 migration、runtime wiring、存储契约，必须跑 `make verify-strict`
 

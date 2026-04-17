@@ -5,9 +5,9 @@ __pycache__/
 *.pyc
 node_modules/
 dist/
+bin/
 coverage/
 .env
 .env.*
-!.env.example
 !deploy/.env.runtime.example
 !deploy/.env.dev.example

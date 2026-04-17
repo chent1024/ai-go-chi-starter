@@ -33,7 +33,7 @@
 }
 ```
 
-横切层保留错误码见 [docs/errors.md](/Users/xihe0000/workspace/code/ai-go-chi-starter/docs/errors.md)。
+横切层保留错误码见 `docs/app/errors.md`。
 
 ## 路由
 

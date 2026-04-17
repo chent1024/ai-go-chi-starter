@@ -2,12 +2,12 @@
 
 ## 分层
 
-- `cmd/*`：只负责进程入口和装配
-- `internal/transport/httpapi`：只负责 HTTP 协议层和 middleware
-- `internal/service`：负责业务规则和领域服务
-- `internal/infra`：负责 PostgreSQL、outbound client 等具体适配器
-- `internal/runtime`：负责日志、trace、span、outbound logging 等横切基础设施
-- `internal/config`：仓库里唯一允许读取 env 的包
+- `app/cmd/*`：只负责进程入口和装配
+- `app/internal/transport/httpapi`：只负责 HTTP 协议层和 middleware
+- `app/internal/service`：负责业务规则和领域服务
+- `app/internal/infra`：负责 PostgreSQL、outbound client 等具体适配器
+- `app/internal/runtime`：负责日志、trace、span、outbound logging 等横切基础设施
+- `app/internal/config`：仓库里唯一允许读取 env 的包
 - outbound HTTP client 共享一套 transport profile：timeout、keep-alive 连接池、trace 透传、child span 和 outbound logging 都集中配置
 - API 还内置 body limit、安全响应头、build info 和基础 metrics
 
@@ -15,15 +15,15 @@
 
 ### API
 
-`cmd/api` 负责加载配置、创建 logger、按显式连接池配置打开 PostgreSQL、装配 example service 和 handler，然后启动带 graceful shutdown 的 chi 服务。HTTP server timeout 和 draining 状态也在这里完成 wiring，shutdown 期间会拒绝新的业务请求。
+`app/cmd/api` 负责加载配置、创建 logger、按显式连接池配置打开 PostgreSQL、装配 example service 和 handler，然后启动带 graceful shutdown 的 chi 服务。HTTP server timeout 和 draining 状态也在这里完成 wiring，shutdown 期间会拒绝新的业务请求。
 
 ### Worker
 
-`cmd/worker` 负责加载配置、创建 logger，并通过 `JobHandler` 接口运行最小 ticker loop。shutdown 日志会记录 drain 开始、当前 inflight job 数和 drain 完成。
+`app/cmd/worker` 负责加载配置、创建 logger，并通过 `JobHandler` 接口运行最小 ticker loop。shutdown 日志会记录 drain 开始、当前 inflight job 数和 drain 完成。
 
 ### Migrate
 
-`cmd/migrate` 负责加载配置、打开 PostgreSQL、获取 PostgreSQL advisory lock，并执行 `db/migrations` 下的 forward-only SQL 文件。
+`app/cmd/migrate` 负责加载配置、打开 PostgreSQL、获取 PostgreSQL advisory lock，并执行 `app/db/migrations` 下的 forward-only SQL 文件。
 
 ## HTTP 横切层
 

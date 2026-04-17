@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+APP_DIR="$ROOT_DIR/app"
+DEPLOY_DIR="$ROOT_DIR/deploy"
 cd "$ROOT_DIR"
 
 compose() {
-  docker compose -f deploy/docker-compose.dev.yaml --env-file deploy/.env.dev.example "$@"
+  docker compose -f "$DEPLOY_DIR/docker-compose.dev.yaml" --env-file "$DEPLOY_DIR/.env.dev.example" "$@"
 }
 
 cleanup() {
@@ -30,7 +32,8 @@ if [[ "${health:-}" != "healthy" ]]; then
 fi
 
 set -a
-source deploy/.env.dev.example
+source "$DEPLOY_DIR/.env.dev.example"
 set +a
 
+cd "$APP_DIR"
 go test -count=1 -tags=integration ./internal/infra/store/postgres -run TestExampleRepositoryIntegrationCRUD

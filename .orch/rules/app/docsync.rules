@@ -4,5 +4,5 @@
 # Add repository-specific extensions in .orch/rules/<target>/local.docsync.rules.
 #
 # Examples:
-# internal/config,.env.example|docs/config.md|config changes must update docs
-# internal/transport/httpapi,openapi|docs/api.md|api or contract changes must update docs
+# app/internal/config,deploy/.env.runtime.example,deploy/.env.dev.example|docs/app/config.md|config changes must update docs
+# app/internal/transport/httpapi,app/openapi|docs/app/api.md|api or contract changes must update docs

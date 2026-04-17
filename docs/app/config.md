@@ -1,13 +1,58 @@
 # 配置说明
 
-所有环境变量都只允许在 `internal/config/config.go` 中读取。
+所有环境变量都只允许在 `app/internal/config/config.go` 中读取。
 
 ## 运行时配置项
+
+常见可选值和写法：
+
+- `APP_ENV`：`development`、`staging`、`production`
+- `APP_DATABASE_URL`：`postgres://<user>:<password>@<host>:<port>/<db>?sslmode=disable`
+- `APP_LOG_LEVEL`：`debug`、`info`、`warn`、`error`
+- `APP_LOG_FORMAT`：`text`、`json`
+- `APP_LOG_OUTPUT`：`stdout`、`file`、`both`
+- `APP_WORKER_ENABLED`：`true`、`false`
+- `APP_TIMEZONE`：`UTC`、`Asia/Shanghai`、`America/Los_Angeles`
+
+## 推荐使用方式
+
+### 开发环境推荐
+
+- `APP_ENV=development`
+- `APP_LOG_LEVEL=debug`
+- `APP_LOG_FORMAT=text`
+- `APP_LOG_OUTPUT=stdout`
+- `APP_TIMEZONE=UTC` 或团队统一时区
+- 优先直接使用 `deploy/.env.dev.example`
+
+### 生产环境常见选择
+
+- `APP_ENV=production`
+- `APP_LOG_LEVEL=info`，排障时再临时切到 `debug`
+- `APP_LOG_FORMAT=json`
+- `APP_LOG_OUTPUT=stdout` 或 `both`
+- `APP_WORKER_ENABLED` 按部署角色决定；API-only 实例可设为 `false`
+- `APP_TIMEZONE=UTC`，避免跨时区日志和轮转歧义
+
+### 高风险参数提示
+
+- `APP_DATABASE_URL`
+  - 这是启动硬依赖；`app/cmd/api` 和 `app/cmd/migrate` 缺失时会直接失败
+- `APP_DATABASE_MAX_OPEN_CONNS` / `APP_DATABASE_MAX_IDLE_CONNS`
+  - 不要盲目调大；应结合数据库实例连接上限和部署副本数一起估算
+- `APP_API_REQUEST_TIMEOUT`
+  - 设得过小会放大超时响应；设得过大又会让慢请求长期占住资源
+- `APP_LOG_OUTPUT=file` / `both`
+  - 使用文件日志时要同时关注磁盘空间、保留天数和清理间隔
+- `APP_OUTBOUND_TIMEOUT`
+  - 过长会拖慢故障恢复，过短会让上游轻微抖动直接变成业务失败
+- `APP_TIMEZONE`
+  - 改动后会影响日志时间戳和日志文件轮转边界，线上应避免频繁调整
 
 | Key | 默认值 | 说明 |
 | --- | --- | --- |
 | `APP_ENV` | `development` | 应用运行环境标识。 |
-| `APP_DATABASE_URL` | 空 | `cmd/api` 和 `cmd/migrate` 必需。 |
+| `APP_DATABASE_URL` | 空 | `app/cmd/api` 和 `app/cmd/migrate` 必需。 |
 | `APP_DATABASE_MAX_OPEN_CONNS` | `25` | 数据库连接池最大打开连接数。 |
 | `APP_DATABASE_MAX_IDLE_CONNS` | `25` | 数据库连接池最大空闲连接数。 |
 | `APP_DATABASE_CONN_MAX_LIFETIME` | `30m` | 数据库连接最大生命周期。 |
@@ -45,6 +90,12 @@
 ## Docker 本地开发配置项
 
 这些 key 也会被加载进 config，目的是让示例文件和仓库契约保持一致；它们只影响本地 Compose 使用。
+
+推荐做法：
+
+- 本地单机开发时直接沿用默认值即可
+- 如果宿主机 `5432` 端口已被占用，只调整 `DOCKER_POSTGRES_HOST_PORT`
+- 不要把 `DOCKER_*` 当成线上运行时配置；它们只服务本地 Compose 场景
 
 | Key | 默认值 | 说明 |
 | --- | --- | --- |

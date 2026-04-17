@@ -3,9 +3,9 @@
 #
 # default layered Go service rules:
 # Add repository-specific extensions in .orch/rules/<target>/local.arch.rules.
-internal/service|internal/transport|service must not depend on transport
-internal/transport|internal/infra/store|transport must not depend on concrete stores
-internal/transport|internal/infra/objectstore|transport must not depend on object store adapters
-internal/transport|internal/infra/provider|transport must not depend on provider adapters
-internal/runtime|internal/transport|runtime must not depend on transport
-internal/infra|internal/transport|infrastructure must not depend on transport
+app/internal/service|app/internal/transport|service must not depend on transport
+app/internal/transport|app/internal/infra/store|transport must not depend on concrete stores
+app/internal/transport|app/internal/infra/objectstore|transport must not depend on object store adapters
+app/internal/transport|app/internal/infra/provider|transport must not depend on provider adapters
+app/internal/runtime|app/internal/transport|runtime must not depend on transport
+app/internal/infra|app/internal/transport|infrastructure must not depend on transport

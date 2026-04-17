@@ -53,7 +53,7 @@
 
 这个 starter 必须强制保持这些边界：
 
-1. `cmd/*` 只负责进程装配。
+1. `app/cmd/*` 只负责进程装配。
 2. `transport` 只处理 HTTP 协议相关问题。
 3. `service` 承载业务规则。
 4. `infra` 承载具体适配器、repository 和 client。
@@ -88,75 +88,77 @@ ai-go-chi-starter/
 ├── Makefile
 ├── Makefile.rules
 ├── .gitignore
-├── go.mod
+├── go.work
 ├── README.md
-├── deploy/
-│   ├── .env.runtime.example
-│   ├── .env.dev.example
-│   ├── docker-compose.dev.yaml
-│   └── README.md
 ├── .orch/rules/
-├── cmd/
-│   ├── api/
-│   │   ├── main.go
-│   │   └── app.go
-│   ├── worker/
-│   │   ├── main.go
-│   │   └── app.go
-│   └── migrate/
-│       └── main.go
-├── db/
-│   └── migrations/
-│       └── 001_init.sql
 ├── docs/
 │   ├── implementation-plan.md
 │   ├── architecture.md
 │   ├── config.md
 │   └── api.md
-├── openapi/
-│   └── openapi.yaml
-├── internal/
-│   ├── config/
-│   │   ├── config.go
-│   │   └── config_test.go
-│   ├── runtime/
-│   │   ├── logging.go
-│   │   ├── log_file.go
-│   │   ├── log_fields.go
-│   │   ├── trace.go
-│   │   ├── log_context.go
-│   │   └── outbound.go
-│   ├── transport/
-│   │   └── httpapi/
-│   │       ├── router.go
-│   │       ├── middleware/
-│   │       │   ├── request_id.go
-│   │       │   ├── trace.go
-│   │       │   ├── access_log.go
-│   │       │   └── recover.go
-│   │       ├── httpx/
-│   │       │   ├── envelope.go
-│   │       │   ├── errors.go
-│   │       │   ├── request_context.go
-│   │       │   └── response_recorder.go
-│   │       └── v1/
-│   │           └── example_handler.go
-│   ├── service/
-│   │   ├── shared/
-│   │   │   ├── error.go
-│   │   │   ├── trace.go
-│   │   │   └── ids.go
-│   │   └── example/
-│   │       ├── model.go
-│   │       ├── service.go
-│   │       └── repository.go
-│   └── infra/
-│       ├── store/
-│       │   └── postgres/
-│       │       ├── db.go
-│       │       └── example_repository.go
-│       └── client/
-│           └── httpclient.go
+├── deploy/
+│   ├── .env.runtime.example
+│   ├── .env.dev.example
+│   ├── docker-compose.dev.yaml
+│   └── README.md
+├── app/
+│   ├── go.mod
+│   ├── cmd/
+│   │   ├── api/
+│   │   │   ├── main.go
+│   │   │   └── app.go
+│   │   ├── worker/
+│   │   │   ├── main.go
+│   │   │   └── app.go
+│   │   └── migrate/
+│   │       └── main.go
+│   ├── db/
+│   │   └── migrations/
+│   │       └── 001_init.sql
+│   ├── openapi/
+│   │   └── openapi.yaml
+│   └── internal/
+│       ├── config/
+│       │   ├── config.go
+│       │   └── config_test.go
+│       ├── runtime/
+│       │   ├── logging.go
+│       │   ├── log_file.go
+│       │   ├── log_fields.go
+│       │   ├── trace.go
+│       │   ├── log_context.go
+│       │   └── outbound.go
+│       ├── transport/
+│       │   └── httpapi/
+│       │       ├── router.go
+│       │       ├── middleware/
+│       │       │   ├── request_id.go
+│       │       │   ├── trace.go
+│       │       │   ├── access_log.go
+│       │       │   └── recover.go
+│       │       ├── httpx/
+│       │       │   ├── envelope.go
+│       │       │   ├── errors.go
+│       │       │   ├── request_context.go
+│       │       │   └── response_recorder.go
+│       │       └── v1/
+│       │           └── example_handler.go
+│       ├── service/
+│       │   ├── shared/
+│       │   │   ├── error.go
+│       │   │   ├── trace.go
+│       │   │   └── ids.go
+│       │   └── example/
+│       │       ├── model.go
+│       │       ├── service.go
+│       │       └── repository.go
+│       └── infra/
+│           ├── store/
+│           │   └── postgres/
+│           │       ├── db.go
+│           │       └── example_repository.go
+│           └── client/
+│               └── httpclient.go
 └── .runtime/
 ```
 
@@ -168,8 +170,8 @@ ai-go-chi-starter/
 
 实现：
 
-- `cmd/api/main.go`
-- `cmd/api/app.go`
+- `app/cmd/api/main.go`
+- `app/cmd/api/app.go`
 
 能力要求：
 
@@ -183,8 +185,8 @@ ai-go-chi-starter/
 
 实现：
 
-- `cmd/worker/main.go`
-- `cmd/worker/app.go`
+- `app/cmd/worker/main.go`
+- `app/cmd/worker/app.go`
 
 能力要求：
 
@@ -200,19 +202,19 @@ ai-go-chi-starter/
 
 实现：
 
-- `cmd/migrate/main.go`
+- `app/cmd/migrate/main.go`
 
 能力要求：
 
 - 连接 PostgreSQL
-- 执行 `db/migrations` 下的 SQL migration
+- 执行 `app/db/migrations` 下的 SQL migration
 
 ### 4. 配置系统
 
 实现：
 
-- `internal/config/config.go`
-- `internal/config/config_test.go`
+- `app/internal/config/config.go`
+- `app/internal/config/config_test.go`
 
 要求：
 
@@ -220,18 +222,18 @@ ai-go-chi-starter/
 - 集中解析
 - 明确默认值
 - 启动阶段完成校验
-- `internal/config` 之外不允许读取环境变量
+- `app/internal/config` 之外不允许读取环境变量
 
 ### 5. 日志与 Runtime 横切层
 
 实现：
 
-- `internal/runtime/logging.go`
-- `internal/runtime/log_file.go`
-- `internal/runtime/log_fields.go`
-- `internal/runtime/log_context.go`
-- `internal/runtime/trace.go`
-- `internal/runtime/outbound.go`
+- `app/internal/runtime/logging.go`
+- `app/internal/runtime/log_file.go`
+- `app/internal/runtime/log_fields.go`
+- `app/internal/runtime/log_context.go`
+- `app/internal/runtime/trace.go`
+- `app/internal/runtime/outbound.go`
 
 要求：
 
@@ -247,9 +249,9 @@ ai-go-chi-starter/
 
 实现：
 
-- `internal/transport/httpapi/router.go`
-- `internal/transport/httpapi/middleware/*`
-- `internal/transport/httpapi/httpx/*`
+- `app/internal/transport/httpapi/router.go`
+- `app/internal/transport/httpapi/middleware/*`
+- `app/internal/transport/httpapi/httpx/*`
 
 要求：
 
@@ -280,8 +282,8 @@ ai-go-chi-starter/
 
 实现：
 
-- `internal/infra/store/postgres/db.go`
-- `internal/infra/store/postgres/example_repository.go`
+- `app/internal/infra/store/postgres/db.go`
+- `app/internal/infra/store/postgres/example_repository.go`
 
 要求：
 
@@ -411,7 +413,8 @@ DOCKER_POSTGRES_PASSWORD=postgres
 
 创建：
 
-- `go.mod`
+- `go.work`
+- `app/go.mod`
 - `.gitignore`
 - `README.md`
 - 目录骨架
@@ -420,14 +423,14 @@ DOCKER_POSTGRES_PASSWORD=postgres
 完成标准：
 
 - 仓库目录结构已经建立
-- `go test ./...` 已可执行，即使实现仍然很小
+- `cd app && go test ./...` 已可执行；若在仓库根执行，则使用 `go test ./app/...`
 
 ### 第二阶段：Config 与 Runtime
 
 创建：
 
-- `internal/config/*`
-- `internal/runtime/*`
+- `app/internal/config/*`
+- `app/internal/runtime/*`
 - env 示例文件
 
 完成标准：
@@ -455,8 +458,8 @@ DOCKER_POSTGRES_PASSWORD=postgres
 
 创建：
 
-- `service/example/*`
-- `transport/httpapi/v1/example_handler.go`
+- `app/internal/service/example/*`
+- `app/internal/transport/httpapi/v1/example_handler.go`
 
 完成标准：
 
@@ -531,7 +534,7 @@ DOCKER_POSTGRES_PASSWORD=postgres
 Codex 应遵守以下实现约束：
 
 1. 不要把业务逻辑放进 handler。
-2. 不要在 `internal/config` 之外读取 env。
+2. 不要在 `app/internal/config` 之外读取 env。
 3. 不要引入框架式 magic 或隐藏的全局状态。
 4. 保持文件和函数短小。
 5. 只有存在真实边界时才引入显式接口。
@@ -559,15 +562,15 @@ Codex 应遵守以下实现约束：
 
 实现：
 
-- `cmd/api`, `cmd/worker`, `cmd/migrate`
-- 在 `internal/config` 中集中加载配置
-- 在 `internal/runtime` 中实现 runtime logging / trace / outbound helpers
-- 在 `internal/transport/httpapi` 中实现 chi router 和 middleware
-- 在 `internal/transport/httpapi/httpx` 中实现 JSON envelope / error helpers
+- `app/cmd/api`, `app/cmd/worker`, `app/cmd/migrate`
+- 在 `app/internal/config` 中集中加载配置
+- 在 `app/internal/runtime` 中实现 runtime logging / trace / outbound helpers
+- 在 `app/internal/transport/httpapi` 中实现 chi router 和 middleware
+- 在 `app/internal/transport/httpapi/httpx` 中实现 JSON envelope / error helpers
 - 实现一个最小 demo 资源 `example`，支持 create / get / list
 - 实现 postgres repository 和 SQL migration
 - 在 `deploy/` 下提供 env 示例
-- 在 `openapi/` 下提供 OpenAPI stub
+- 在 `app/openapi/` 下提供 OpenAPI stub
 - 在 `docs/` 下补齐文档
 - 补齐 rules 和 AGENTS 约束
 

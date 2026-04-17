@@ -70,15 +70,16 @@
 <!-- rules:user:start -->
 ## 8. Starter 模板放置约定
 
-- `cmd/api`、`cmd/worker`、`cmd/migrate` 只负责进程装配，不写业务规则
-- `internal/transport/httpapi/v1` 只放 handler 和 HTTP DTO，不直接操作 SQL 或业务状态机
-- `internal/service/<domain>` 放 domain model、service、repository interface
-- `internal/infra/store/postgres` 放 PostgreSQL 具体实现，不返回 HTTP DTO
-- `internal/runtime` 放日志、trace、outbound logging 等横切基础设施
-- 新增 env key 时，只能在 `internal/config/config.go` 读取，并同步 `.env.example`、`deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/config.md`
-- 新增 API 路由或响应字段时，必须同步 `docs/api.md` 和 `openapi/openapi.yaml`
-- 新增或调整保留错误码时，必须同步 `docs/errors.md`
+- 当前仓库的 Go 服务代码位于 `app/`；默认应把 `app/` 视为服务根目录
+- `app/cmd/api`、`app/cmd/worker`、`app/cmd/migrate` 只负责进程装配，不写业务规则
+- `app/internal/transport/httpapi/v1` 只放 handler 和 HTTP DTO，不直接操作 SQL 或业务状态机
+- `app/internal/service/<domain>` 放 domain model、service、repository interface
+- `app/internal/infra/store/postgres` 放 PostgreSQL 具体实现，不返回 HTTP DTO
+- `app/internal/runtime` 放日志、trace、outbound logging 等横切基础设施
+- 新增 env key 时，只能在 `app/internal/config/config.go` 读取，并同步 `deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/app/config.md`
+- 新增 API 路由或响应字段时，必须同步 `docs/app/api.md` 和 `app/openapi/openapi.yaml`
+- 新增或调整保留错误码时，必须同步 `docs/app/errors.md`
 - 所有长耗时逻辑必须接受并向下传递 `context.Context`，service / repository / outbound client / worker handler 都必须尊重 `ctx.Done()`
 - 数据库访问必须优先使用 `QueryContext` / `ExecContext` / `BeginTx` 这类 context 版本 API；出站 HTTP 必须使用 `NewRequestWithContext`
-- 新增 domain 或 HTTP 能力前，优先阅读 `docs/codex-guide.md` 和对应 recipe；默认沿用现有 `example` 模式扩展，不新造框架
+- 新增 domain 或 HTTP 能力前，优先阅读 `docs/app/codex-guide.md` 和对应 recipe；默认沿用现有 `example` 模式扩展，不新造框架
 <!-- rules:user:end -->

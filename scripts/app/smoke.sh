@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+APP_DIR="$ROOT_DIR/app"
+DEPLOY_DIR="$ROOT_DIR/deploy"
 cd "$ROOT_DIR"
 
 compose() {
-  docker compose -f deploy/docker-compose.dev.yaml --env-file deploy/.env.dev.example "$@"
+  docker compose -f "$DEPLOY_DIR/docker-compose.dev.yaml" --env-file "$DEPLOY_DIR/.env.dev.example" "$@"
 }
 
 API_PID=""
@@ -24,7 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p .runtime
+mkdir -p "$ROOT_DIR/.runtime"
 compose down -v >/dev/null 2>&1 || true
 compose up -d
 
@@ -42,15 +44,16 @@ if [[ "${health:-}" != "healthy" ]]; then
 fi
 
 set -a
-source deploy/.env.dev.example
+source "$DEPLOY_DIR/.env.dev.example"
 set +a
 
+cd "$APP_DIR"
 go run ./cmd/migrate -action up
 
-go run ./cmd/api >.runtime/smoke-api.log 2>&1 &
+go run ./cmd/api >"$ROOT_DIR/.runtime/smoke-api.log" 2>&1 &
 API_PID=$!
 
-APP_WORKER_POLL_INTERVAL=1s go run ./cmd/worker >.runtime/smoke-worker.log 2>&1 &
+APP_WORKER_POLL_INTERVAL=1s go run ./cmd/worker >"$ROOT_DIR/.runtime/smoke-worker.log" 2>&1 &
 WORKER_PID=$!
 
 for _ in $(seq 1 30); do
