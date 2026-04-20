@@ -4,6 +4,34 @@
 
 当前仓库采用“仓库根保留入口、Go 服务根位于 `app/`”的结构。
 
+## 如何使用模板
+
+如果这个仓库已经被设置为 GitHub Template Repository，推荐这样使用：
+
+1. 在 GitHub 页面点击 `Use this template`
+2. 生成新的目标仓库
+3. clone 新仓库后先执行：
+
+```bash
+make verify
+```
+
+如果你使用 GitHub CLI，也可以直接执行：
+
+```bash
+gh repo create <new-repo-name> \
+  --template chent1024/ai-go-chi-starter \
+  --private \
+  --clone
+```
+
+生成新仓库后建议优先做这些事：
+
+1. 按需要修改仓库名、`README.md` 标题和 `app/go.mod` module path
+2. 检查 `deploy/.env.dev.example` 和 `deploy/.env.runtime.example`
+3. 阅读 `AGENTS.md`、`docs/app/codex-guide.md`、`docs/app/architecture.md`
+4. 不要继续把 `example` 当真实业务名，新增业务时按 `docs/app/recipes/add-domain.md` 扩展
+
 ## 模板硬约束
 
 - handler 不写业务逻辑，只负责 HTTP 协议转换
