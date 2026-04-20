@@ -1,9 +1,11 @@
 package worker
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 )
@@ -48,6 +50,35 @@ func TestTickerPassesCancelableContextToHandler(t *testing.T) {
 
 	if err := <-errCh; err != nil {
 		t.Fatalf("Run() error = %v", err)
+	}
+}
+
+func TestTickerDoesNotEmitIdleDebugNoise(t *testing.T) {
+	var output bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&output, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	worker := NewTicker(TickerOptions{
+		Interval: 1 * time.Millisecond,
+		Logger:   logger,
+		Handler: JobHandlerFunc(func(ctx context.Context) error {
+			_ = ctx
+			return nil
+		}),
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- worker.Run(ctx)
+	}()
+
+	time.Sleep(5 * time.Millisecond)
+	cancel()
+
+	if err := <-errCh; err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if strings.TrimSpace(output.String()) != "" {
+		t.Fatalf("unexpected idle worker logs: %s", output.String())
 	}
 }
 

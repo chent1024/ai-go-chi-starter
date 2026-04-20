@@ -79,7 +79,7 @@
 - HTTP 入站请求是整条链路的父 trace
 - outbound HTTP 调用创建 child span：`outbound.http.roundtrip`
 - PostgreSQL repository 调用创建 child span：`postgres.<resource>.<operation>`
-- worker job 执行创建 child span：`worker.job.handle`
+- worker ticker 本身不为每次空轮询创建 child span；只有真实 job handler 执行到有意义的工作时，才应创建 worker 侧 child span
 - 后续新增 domain/service 的内部 span，应沿用 `<layer>.<resource>.<operation>` 命名模式
 - 只有跨边界或明显长耗时步骤才应创建 child span；普通 getter、DTO 转换、轻量校验不要滥起 span
 - 新 span 必须基于当前 request/job 的 context 继续派生，不允许脱离当前链路使用 `context.Background()`

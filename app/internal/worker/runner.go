@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"sync/atomic"
 	"time"
-
-	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 )
 
 type JobHandler interface {
@@ -49,17 +47,12 @@ func (w Ticker) Run(ctx context.Context) error {
 			if w.activeJobs != nil {
 				w.activeJobs.Add(1)
 			}
-			jobCtx, span := rttrace.StartSpan(ctx, w.logger, "worker.job.handle")
-			err := w.handler.Handle(jobCtx)
-			span.End(err)
+			err := w.handler.Handle(ctx)
 			if w.activeJobs != nil {
 				w.activeJobs.Add(-1)
 			}
 			if err != nil {
 				return err
-			}
-			if w.logger != nil {
-				w.logger.Debug("worker tick completed")
 			}
 		}
 	}
