@@ -6,7 +6,7 @@
 - `app/internal/transport/httpapi`：只负责 HTTP 协议层和 middleware
 - `app/internal/service`：负责业务规则和领域服务
 - `app/internal/infra`：负责 PostgreSQL、outbound client 等具体适配器
-- `app/internal/runtime/logging`：负责 logger、bootstrap logger、redaction、outbound logging
+- `app/internal/runtime/logging`：负责 logger、bootstrap logger、redaction、outbound logging，以及按 `APP_TIMEZONE` 在本地零点主动切换每日文件日志
 - `app/internal/runtime/tracing`：负责 request id、trace、span 等横切链路能力
 - `app/internal/transport/httpapi/drain`：负责 HTTP graceful shutdown 期间的新请求拒绝状态
 - `app/internal/transport/httpapi/metrics`：负责 HTTP 指标和 build info 输出

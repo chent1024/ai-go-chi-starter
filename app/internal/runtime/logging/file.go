@@ -17,6 +17,9 @@ type dailyLogWriter struct {
 	dir         string
 	location    *time.Location
 	now         func() time.Time
+	after       func(time.Duration) <-chan time.Time
+	stop        chan struct{}
+	done        chan struct{}
 	mu          sync.Mutex
 	currentDate string
 	file        *os.File
@@ -26,12 +29,35 @@ func newDailyLogWriter(service, dir string, location *time.Location) io.WriteClo
 	if strings.TrimSpace(dir) == "" {
 		return nopWriteCloser{Writer: io.Discard}
 	}
-	return &dailyLogWriter{
+	return newDailyLogWriterWithClock(
+		service,
+		dir,
+		location,
+		time.Now,
+		func(wait time.Duration) <-chan time.Time {
+			return time.After(wait)
+		},
+	)
+}
+
+func newDailyLogWriterWithClock(
+	service string,
+	dir string,
+	location *time.Location,
+	now func() time.Time,
+	after func(time.Duration) <-chan time.Time,
+) *dailyLogWriter {
+	writer := &dailyLogWriter{
 		service:  service,
 		dir:      dir,
 		location: logLocation(location),
-		now:      time.Now,
+		now:      now,
+		after:    after,
+		stop:     make(chan struct{}),
+		done:     make(chan struct{}),
 	}
+	go writer.runRotationLoop()
+	return writer
 }
 
 func (w *dailyLogWriter) Write(p []byte) (int, error) {
@@ -46,6 +72,13 @@ func (w *dailyLogWriter) Write(p []byte) (int, error) {
 }
 
 func (w *dailyLogWriter) Close() error {
+	if w.stop != nil {
+		close(w.stop)
+		<-w.done
+		w.stop = nil
+		w.done = nil
+	}
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if w.file == nil {
@@ -81,6 +114,40 @@ func (w *dailyLogWriter) ensureFileLocked(now time.Time) (*os.File, error) {
 
 func buildLogFilename(service string, now time.Time) string {
 	return fmt.Sprintf("%s-%s.log", service, now.Format(time.DateOnly))
+}
+
+func (w *dailyLogWriter) runRotationLoop() {
+	defer close(w.done)
+
+	for {
+		select {
+		case <-w.stop:
+			return
+		case <-w.after(nextDailyRotationDelay(w.now(), w.location)):
+		}
+
+		if err := w.rotateToCurrentDate(); err != nil {
+			continue
+		}
+	}
+}
+
+func (w *dailyLogWriter) rotateToCurrentDate() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	_, err := w.ensureFileLocked(w.now())
+	return err
+}
+
+func nextDailyRotationDelay(now time.Time, location *time.Location) time.Duration {
+	current := now.In(logLocation(location))
+	next := time.Date(current.Year(), current.Month(), current.Day()+1, 0, 0, 0, 0, current.Location())
+	wait := next.Sub(current)
+	if wait <= 0 {
+		return time.Second
+	}
+	return wait
 }
 
 func CleanupLogFiles(dir string, retentionDays int, location *time.Location) error {

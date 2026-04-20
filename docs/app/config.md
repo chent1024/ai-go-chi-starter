@@ -71,7 +71,7 @@
 | `APP_LOG_LEVEL` | `info` | 可选值：`debug`、`info`、`warn`、`error`。 |
 | `APP_LOG_FORMAT` | `text` | 可选值：`text`、`json`。 |
 | `APP_LOG_OUTPUT` | `stdout` | 可选值：`stdout`、`file`、`both`。 |
-| `APP_LOG_DIR` | `./.runtime/logs` | 文件日志输出目录。 |
+| `APP_LOG_DIR` | `./.runtime/logs` | 文件日志输出目录；文件名按 `<service>-YYYY-MM-DD.log` 存储，并按 `APP_TIMEZONE` 在本地零点主动切换。 |
 | `APP_LOG_RETENTION_DAYS` | `7` | 按天保留日志的窗口。 |
 | `APP_LOG_CLEANUP_INTERVAL` | `1h` | 文件日志清理 ticker 间隔。 |
 | `APP_LOG_ACCESS_ENABLED` | `true` | 是否开启 HTTP access log。 |
