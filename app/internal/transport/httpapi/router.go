@@ -2,13 +2,13 @@ package httpapi
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
 	"ai-go-chi-starter/internal/service/shared"
 	apidrain "ai-go-chi-starter/internal/transport/httpapi/drain"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
@@ -36,7 +36,7 @@ type RouterOptions struct {
 func NewRouter(options RouterOptions) http.Handler {
 	logger := options.Logger
 	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		logger = rtlog.NewNoopLogger()
 	}
 
 	r := chi.NewRouter()

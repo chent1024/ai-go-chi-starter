@@ -528,6 +528,9 @@ render_target_env_content() {
 
   if [[ "$lang" == "go" ]]; then
     config_sources="${prefix}internal/config/config.go"
+    if [[ -f "$target_repo/deploy/.env.dev.example" ]]; then
+      env_example="deploy/.env.dev.example"
+    fi
     api_paths="${prefix}internal/httpapi ${prefix}internal/transport/httpapi/router.go ${prefix}internal/transport/httpapi/public ${prefix}internal/transport/httpapi/internal ${prefix}internal/transport/httpapi/httpx ${prefix}internal/transport/httpapi/security ${prefix}internal/api"
     arch_backend="go_imports"
     go_layout_profile="service_layered"

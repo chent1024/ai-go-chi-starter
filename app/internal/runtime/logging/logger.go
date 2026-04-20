@@ -31,6 +31,10 @@ func NewLogger(options Options, service string, stdout io.Writer) (*slog.Logger,
 	return slog.New(handler).With(LogFieldService, service), closer
 }
 
+func NewNoopLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(io.Discard, nil))
+}
+
 func WithRequestID(logger *slog.Logger, requestID string) *slog.Logger {
 	if logger == nil || requestID == "" {
 		return logger

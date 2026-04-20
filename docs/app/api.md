@@ -35,6 +35,8 @@
 
 横切层保留错误码见 `docs/app/errors.md`。
 
+transport 层会基于领域错误里的 `shared.Kind` 统一决定 HTTP status，再写回同一套错误 envelope；domain error 本身不直接携带 HTTP status。
+
 ## 路由
 
 | 方法 | 路径 | 用途 |

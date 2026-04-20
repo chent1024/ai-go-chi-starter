@@ -227,12 +227,9 @@ ai-go-chi-starter/
 
 实现：
 
-- `app/internal/runtime/logging.go`
-- `app/internal/runtime/log_file.go`
-- `app/internal/runtime/log_fields.go`
-- `app/internal/runtime/log_context.go`
-- `app/internal/runtime/trace.go`
-- `app/internal/runtime/outbound.go`
+- `app/internal/runtime/logging/*`
+- `app/internal/runtime/tracing/*`
+- `app/internal/transport/httpapi/metrics/*`
 
 要求：
 
@@ -385,21 +382,22 @@ DOCKER_POSTGRES_PASSWORD=postgres
 这些区域可以作为较安全的参考源：
 
 - `app/internal/config/config.go`
-- `app/internal/runtime/logging.go`
-- `app/internal/runtime/log_file.go`
-- `app/internal/runtime/outbound.go`
+- `app/internal/runtime/logging/logger.go`
+- `app/internal/runtime/logging/file.go`
+- `app/internal/runtime/logging/outbound.go`
+- `app/internal/runtime/tracing/trace.go`
 - `app/internal/transport/httpapi/httpx/envelope.go`
-- `app/internal/transport/httpapi/httpx/access_log.go`
-- `app/internal/transport/httpapi/httpx/trace.go`
+- `app/internal/transport/httpapi/httpx/errors.go`
+- `app/internal/transport/httpapi/httpx/request_context.go`
 - `app/internal/service/shared/error.go`
-- `app/internal/service/shared/trace.go`
+- `app/internal/service/shared/error_codes.go`
 - `app/cmd/api/app.go`
 
 ### 必须重写，不能照搬
 
 - `app/internal/transport/httpapi/router.go`
   - 必须改成基于 chi 的实现
-- 所有 `uploads` 领域代码
+- 所有历史占位业务代码，如果目标需求与当前 `example` 域无关
 - 所有 object store/provider 代码
 - 所有 queue/governance 代码
 - 所有 upload/minimax/staging 行为

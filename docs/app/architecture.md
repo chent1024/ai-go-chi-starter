@@ -21,6 +21,17 @@
 - `app/internal/infra/store/*` 不依赖 `internal/transport/*`
 - `app/cmd/*` 不实现 ticker loop、drain 状态机或其他长生命周期运行逻辑
 - HTTP 专属状态和指标必须留在 `app/internal/transport/httpapi/*`，不要回流到 runtime
+- `service`、`infra`、`transport`、`worker` 的生产代码不创建根 context；它们只继续传播调用方的 context
+- `internal/runtime/logging` 是唯一允许构建 `slog` handler 和默认 `slog.Logger` 实例的包；`LogField*` 常量只允许留在 `internal/runtime/logging` 和 `internal/runtime/tracing`
+
+## 目录准入
+
+- `app/internal` 顶级目录是稳定骨架：`config`、`constraints`、`infra`、`runtime`、`service`、`transport`、`worker`
+- `app/internal/runtime` 只允许 `logging`、`tracing` 两个稳定子包
+- `app/internal/transport/httpapi` 只允许 `drain`、`httpx`、`metrics`、`middleware`、`v1` 这些稳定子域
+- 新增业务能力时，优先落到现有稳定目录里；`app/internal/service/<domain>` 是正常扩展点
+- 如果确实需要新增稳定目录，必须同时更新本文件、`docs/app/codex-guide.md`、`.orch/rules/app/local.arch.rules` 和 `app/internal/constraints/repo_rules_test.go`
+- 每个新增 domain 目录都应按 recipe 同步落地 service、postgres repository、HTTP handler 及对应 tests，不要只建一半骨架
 
 ## 进程装配
 

@@ -18,6 +18,9 @@
 - 新增横切层错误码前，先在这里补文档，再在 transport 或 middleware 中使用
 - 业务失败优先使用领域错误码，基础设施或协议层行为优先使用保留错误码
 - `INVALID_ARGUMENT` 可以同时覆盖 JSON 解码失败、空请求体、unknown fields、错误的 `Content-Type`、多个 JSON document 以及 body limit 超限等 transport 层输入错误
+- service/shared 只保留领域错误语义，例如 `Code`、`Kind`、`Retryable` 和 `details`
+- HTTP status 由 `internal/transport/httpapi/httpx` 基于 `shared.Kind` 统一映射，不在领域错误对象里保存 transport 语义
+- 错误日志字段名统一归 `internal/runtime/logging`，不要回流到 `service/shared`
 
 ## 领域错误码规则
 

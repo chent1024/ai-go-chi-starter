@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
 	"ai-go-chi-starter/internal/service/shared"
 )
 
@@ -94,8 +95,8 @@ func logRequestFailure(req *http.Request, status int, code string, retryable boo
 		"route", routePattern(req),
 		"path", req.URL.Path,
 		"status", status,
-		shared.LogFieldErrorCode, code,
-		shared.LogFieldRetryable, retryable,
+		rtlog.LogFieldErrorCode, code,
+		rtlog.LogFieldRetryable, retryable,
 		"err", err,
 		"details", details,
 	)
