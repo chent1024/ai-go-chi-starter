@@ -54,6 +54,17 @@ def rel_to_repo(path: str, repo_root: Path) -> str:
     return Path(path).resolve().relative_to(repo_root.resolve()).as_posix()
 
 
+def parse_rule_line(line: str) -> tuple[str, str, str, str]:
+    parts = [part.strip() for part in line.split("|", 3)]
+    if len(parts) == 3:
+        scope, forbidden_scope, message = parts
+        return scope, forbidden_scope, message, ""
+    if len(parts) == 4:
+        scope, forbidden_scope, message, guidance = parts
+        return scope, forbidden_scope, message, guidance
+    raise ValueError(line)
+
+
 def main() -> int:
     env_file = Path(sys.argv[1] if len(sys.argv) > 1 else ".orch/rules/global.env")
     if not env_file.exists():
@@ -138,7 +149,7 @@ def main() -> int:
             if not line or line.startswith("#"):
                 continue
             try:
-                scope, forbidden_scope, message = [part.strip() for part in line.split("|", 2)]
+                scope, forbidden_scope, message, guidance = parse_rule_line(line)
             except ValueError:
                 print(f"ARCH CHECK FAILED: invalid rule line: {line}", file=sys.stderr)
                 return 1
@@ -151,6 +162,8 @@ def main() -> int:
                         matches.append(f"{package_dir} imports {imported_dir}")
             if matches:
                 print(f"ARCH CHECK FAILED: {message}", file=sys.stderr)
+                if guidance:
+                    print(f"recommended fix: {guidance}", file=sys.stderr)
                 for match in matches:
                     print(match, file=sys.stderr)
                 print(file=sys.stderr)

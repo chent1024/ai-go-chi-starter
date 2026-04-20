@@ -11,14 +11,16 @@ import (
 
 	"ai-go-chi-starter/internal/config"
 	"ai-go-chi-starter/internal/infra/store/postgres"
-	"ai-go-chi-starter/internal/runtime"
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
 	"ai-go-chi-starter/internal/service/example"
 	"ai-go-chi-starter/internal/transport/httpapi"
+	apidrain "ai-go-chi-starter/internal/transport/httpapi/drain"
+	apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 	v1 "ai-go-chi-starter/internal/transport/httpapi/v1"
 )
 
 func run(ctx context.Context) error {
-	bootstrapLogger := runtime.NewBootstrapLogger("api", os.Stderr)
+	bootstrapLogger := rtlog.NewBootstrapLogger("api", os.Stderr)
 	cfg, err := config.Load()
 	if err != nil {
 		bootstrapLogger.Error("api bootstrap failed", "kind", "fatal", "stage", "config", "err", err)
@@ -54,19 +56,35 @@ func run(ctx context.Context) error {
 type application struct {
 	server     *http.Server
 	logger     *slog.Logger
-	drainState *runtime.DrainState
+	drainState *apidrain.State
 	shutdown   func(context.Context) error
 	close      func()
 }
 
 func newApplication(ctx context.Context, cfg config.Config) (*application, error) {
-	logger, logCloser := runtime.NewLogger(cfg.Logging, "api", os.Stdout)
-	runtime.StartLogCleanup(ctx, logger.With("component", "logging"), cfg.Logging)
-	drainState := &runtime.DrainState{}
+	logOptions := rtlog.Options{
+		Level:           cfg.Logging.Level,
+		Format:          cfg.Logging.Format,
+		SourceEnabled:   cfg.Logging.SourceEnabled,
+		Output:          cfg.Logging.Output,
+		Dir:             cfg.Logging.Dir,
+		RetentionDays:   cfg.Logging.RetentionDays,
+		CleanupInterval: cfg.Logging.CleanupInterval,
+		Location:        cfg.Logging.Location,
+	}
+	logger, logCloser := rtlog.NewLogger(logOptions, "api", os.Stdout)
+	rtlog.StartCleanup(ctx, logger.With("component", "logging"), logOptions)
+	drainState := &apidrain.State{}
 	build := buildInfo()
-	metrics := runtime.NewMetrics(build)
+	metrics := apimetrics.New(build)
 
-	db, err := postgres.Open(ctx, cfg.Database)
+	db, err := postgres.Open(ctx, postgres.Options{
+		URL:             cfg.Database.URL,
+		MaxOpenConns:    cfg.Database.MaxOpenConns,
+		MaxIdleConns:    cfg.Database.MaxIdleConns,
+		ConnMaxLifetime: cfg.Database.ConnMaxLifetime,
+		ConnMaxIdleTime: cfg.Database.ConnMaxIdleTime,
+	})
 	if err != nil {
 		logger.Error("api startup failed", "err", err)
 		_ = logCloser.Close()
@@ -77,15 +95,15 @@ func newApplication(ctx context.Context, cfg config.Config) (*application, error
 	service := example.NewService(repo)
 	handler := v1.NewExampleHandler(service)
 	router := httpapi.NewRouter(httpapi.RouterOptions{
-		Logging:        cfg.Logging,
-		RequestTimeout: cfg.API.RequestTimeout,
-		MaxBodyBytes:   cfg.API.MaxBodyBytes,
-		DrainState:     drainState,
-		Logger:         logger,
-		BuildInfo:      build,
-		Metrics:        metrics,
-		ExampleHandler: handler,
-		ReadyChecker:   postgres.ReadyChecker{DB: db},
+		AccessLogEnabled: cfg.Logging.AccessEnabled,
+		RequestTimeout:   cfg.API.RequestTimeout,
+		MaxBodyBytes:     cfg.API.MaxBodyBytes,
+		DrainState:       drainState,
+		Logger:           logger,
+		BuildInfo:        build,
+		Metrics:          metrics,
+		ExampleHandler:   handler,
+		ReadyChecker:     postgres.ReadyChecker{DB: db},
 	})
 
 	server := &http.Server{
@@ -113,7 +131,7 @@ func newApplication(ctx context.Context, cfg config.Config) (*application, error
 func newShutdownFunc(
 	server *http.Server,
 	logger *slog.Logger,
-	drainState *runtime.DrainState,
+	drainState *apidrain.State,
 	timeout time.Duration,
 ) func(context.Context) error {
 	return func(parent context.Context) error {

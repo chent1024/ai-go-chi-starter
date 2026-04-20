@@ -1,9 +1,9 @@
-package runtime
+package drain
 
 import "testing"
 
-func TestDrainStateLifecycle(t *testing.T) {
-	var state DrainState
+func TestStateLifecycle(t *testing.T) {
+	var state State
 
 	if !state.StartRequest() {
 		t.Fatal("StartRequest() = false, want true before drain")

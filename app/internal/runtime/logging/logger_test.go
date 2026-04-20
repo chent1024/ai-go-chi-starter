@@ -1,12 +1,10 @@
-package runtime
+package logging
 
 import (
 	"bytes"
 	"errors"
 	"strings"
 	"testing"
-
-	"ai-go-chi-starter/internal/config"
 )
 
 func TestRedactTextMasksBearerAndTokenValues(t *testing.T) {
@@ -21,13 +19,12 @@ func TestRedactTextMasksBearerAndTokenValues(t *testing.T) {
 
 func TestNewLoggerRedactsSensitiveAttrs(t *testing.T) {
 	var logs bytes.Buffer
-	logger, closer := NewLogger(config.LoggingConfig{
+	logger, closer := NewLogger(Options{
 		Level:           "info",
 		Format:          "json",
 		Output:          "stdout",
 		RetentionDays:   1,
 		CleanupInterval: 1,
-		Timezone:        "UTC",
 	}, "api", &logs)
 	defer closer.Close()
 
@@ -36,5 +33,22 @@ func TestNewLoggerRedactsSensitiveAttrs(t *testing.T) {
 	output := logs.String()
 	if strings.Contains(output, "top-secret") || strings.Contains(output, "secret") {
 		t.Fatalf("output still contains secret: %s", output)
+	}
+}
+
+func TestNewBootstrapLoggerIncludesServiceAndRedactsSensitiveValues(t *testing.T) {
+	var logs bytes.Buffer
+	logger := NewBootstrapLogger("api", &logs)
+
+	logger.Error("bootstrap failed", "kind", "fatal", "err", errors.New("token=secret"))
+
+	output := logs.String()
+	for _, want := range []string{`"service":"api"`, `"component":"bootstrap"`, `"kind":"fatal"`} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("bootstrap log missing %q: %s", want, output)
+		}
+	}
+	if strings.Contains(output, "secret") {
+		t.Fatalf("bootstrap log still contains secret: %s", output)
 	}
 }

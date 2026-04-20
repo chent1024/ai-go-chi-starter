@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"ai-go-chi-starter/internal/runtime"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 	"ai-go-chi-starter/internal/service/example"
 	"ai-go-chi-starter/internal/service/shared"
 	"log/slog"
@@ -30,7 +30,7 @@ func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (_
 	if r.db == nil {
 		return example.Example{}, shared.ErrInternal("database is not configured")
 	}
-	spanCtx, span := runtime.StartSpan(ctx, r.logger, "postgres.example.create")
+	spanCtx, span := rttrace.StartSpan(ctx, r.logger, "postgres.example.create")
 	defer func() {
 		span.End(err, "db.system", "postgres", "db.operation", "insert", "db.table", "examples")
 	}()
@@ -48,7 +48,7 @@ func (r *ExampleRepository) Get(ctx context.Context, id string) (_ example.Examp
 	if r.db == nil {
 		return example.Example{}, shared.ErrInternal("database is not configured")
 	}
-	spanCtx, span := runtime.StartSpan(ctx, r.logger, "postgres.example.get")
+	spanCtx, span := rttrace.StartSpan(ctx, r.logger, "postgres.example.get")
 	defer func() {
 		span.End(err, "db.system", "postgres", "db.operation", "select_one", "db.table", "examples")
 	}()
@@ -73,7 +73,7 @@ func (r *ExampleRepository) List(ctx context.Context) (_ []example.Example, err 
 	if r.db == nil {
 		return nil, shared.ErrInternal("database is not configured")
 	}
-	spanCtx, span := runtime.StartSpan(ctx, r.logger, "postgres.example.list")
+	spanCtx, span := rttrace.StartSpan(ctx, r.logger, "postgres.example.list")
 	defer func() {
 		span.End(err, "db.system", "postgres", "db.operation", "select_many", "db.table", "examples")
 	}()

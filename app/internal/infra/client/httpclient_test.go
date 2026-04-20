@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"ai-go-chi-starter/internal/config"
-	"ai-go-chi-starter/internal/service/shared"
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 )
 
 func TestConfigureTransportAppliesOutboundSettings(t *testing.T) {
-	cfg := config.OutboundConfig{
+	options := Options{
 		Timeout:               45 * time.Second,
 		MaxIdleConns:          120,
 		MaxIdleConnsPerHost:   24,
@@ -27,38 +27,38 @@ func TestConfigureTransportAppliesOutboundSettings(t *testing.T) {
 	}
 
 	base := &http.Transport{}
-	client := NewHTTPClient(&http.Client{Transport: base}, discardLogger(), config.LoggingConfig{}, cfg, "svc", "dep")
+	client := NewHTTPClient(&http.Client{Transport: base}, discardLogger(), options, "svc", "dep")
 
-	if client.Timeout != cfg.Timeout {
-		t.Fatalf("client timeout = %v, want %v", client.Timeout, cfg.Timeout)
+	if client.Timeout != options.Timeout {
+		t.Fatalf("client timeout = %v, want %v", client.Timeout, options.Timeout)
 	}
 
-	transport, ok := configureTransport(base, cfg).(*http.Transport)
+	transport, ok := configureTransport(base, options).(*http.Transport)
 	if !ok {
 		t.Fatal("configureTransport() did not return *http.Transport")
 	}
-	if transport.MaxIdleConns != cfg.MaxIdleConns {
-		t.Fatalf("MaxIdleConns = %d, want %d", transport.MaxIdleConns, cfg.MaxIdleConns)
+	if transport.MaxIdleConns != options.MaxIdleConns {
+		t.Fatalf("MaxIdleConns = %d, want %d", transport.MaxIdleConns, options.MaxIdleConns)
 	}
-	if transport.MaxIdleConnsPerHost != cfg.MaxIdleConnsPerHost {
-		t.Fatalf("MaxIdleConnsPerHost = %d, want %d", transport.MaxIdleConnsPerHost, cfg.MaxIdleConnsPerHost)
+	if transport.MaxIdleConnsPerHost != options.MaxIdleConnsPerHost {
+		t.Fatalf("MaxIdleConnsPerHost = %d, want %d", transport.MaxIdleConnsPerHost, options.MaxIdleConnsPerHost)
 	}
-	if transport.IdleConnTimeout != cfg.IdleConnTimeout {
-		t.Fatalf("IdleConnTimeout = %v, want %v", transport.IdleConnTimeout, cfg.IdleConnTimeout)
+	if transport.IdleConnTimeout != options.IdleConnTimeout {
+		t.Fatalf("IdleConnTimeout = %v, want %v", transport.IdleConnTimeout, options.IdleConnTimeout)
 	}
-	if transport.TLSHandshakeTimeout != cfg.TLSHandshakeTimeout {
-		t.Fatalf("TLSHandshakeTimeout = %v, want %v", transport.TLSHandshakeTimeout, cfg.TLSHandshakeTimeout)
+	if transport.TLSHandshakeTimeout != options.TLSHandshakeTimeout {
+		t.Fatalf("TLSHandshakeTimeout = %v, want %v", transport.TLSHandshakeTimeout, options.TLSHandshakeTimeout)
 	}
-	if transport.ResponseHeaderTimeout != cfg.ResponseHeaderTimeout {
-		t.Fatalf("ResponseHeaderTimeout = %v, want %v", transport.ResponseHeaderTimeout, cfg.ResponseHeaderTimeout)
+	if transport.ResponseHeaderTimeout != options.ResponseHeaderTimeout {
+		t.Fatalf("ResponseHeaderTimeout = %v, want %v", transport.ResponseHeaderTimeout, options.ResponseHeaderTimeout)
 	}
-	if transport.ExpectContinueTimeout != cfg.ExpectContinueTimeout {
-		t.Fatalf("ExpectContinueTimeout = %v, want %v", transport.ExpectContinueTimeout, cfg.ExpectContinueTimeout)
+	if transport.ExpectContinueTimeout != options.ExpectContinueTimeout {
+		t.Fatalf("ExpectContinueTimeout = %v, want %v", transport.ExpectContinueTimeout, options.ExpectContinueTimeout)
 	}
 }
 
 func TestNewHTTPClientInjectsTraceparent(t *testing.T) {
-	trace := shared.NewRootTrace()
+	trace := rttrace.NewRootTrace()
 	var captured *http.Request
 	base := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		captured = req
@@ -73,14 +73,13 @@ func TestNewHTTPClientInjectsTraceparent(t *testing.T) {
 	client := NewHTTPClient(
 		&http.Client{Transport: base},
 		discardLogger(),
-		config.LoggingConfig{},
 		defaultOutboundConfig(),
 		"svc",
 		"dep",
 	)
 
 	req, err := http.NewRequestWithContext(
-		shared.WithTrace(context.Background(), trace),
+		rttrace.ContextWithTrace(context.Background(), trace),
 		http.MethodGet,
 		"https://example.com/ping",
 		nil,
@@ -98,7 +97,7 @@ func TestNewHTTPClientInjectsTraceparent(t *testing.T) {
 	if captured == nil {
 		t.Fatal("round tripper did not receive request")
 	}
-	childTrace, ok := shared.ParseTraceparent(captured.Header.Get(traceparentHeader))
+	childTrace, ok := rttrace.ParseTraceparent(captured.Header.Get(traceparentHeader))
 	if !ok {
 		t.Fatalf("Traceparent = %q, want valid traceparent", captured.Header.Get(traceparentHeader))
 	}
@@ -125,7 +124,7 @@ func TestConfigureTransportKeepsCustomRoundTripper(t *testing.T) {
 func TestNewHTTPClientLogsOutboundWithRequestContext(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
-	trace := shared.NewRootTrace()
+	trace := rttrace.NewRootTrace()
 	base := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusNoContent,
@@ -138,13 +137,12 @@ func TestNewHTTPClientLogsOutboundWithRequestContext(t *testing.T) {
 	client := NewHTTPClient(
 		&http.Client{Transport: base},
 		logger,
-		config.LoggingConfig{Level: "debug", OutboundEnabled: true, OutboundLevel: "info"},
 		defaultOutboundConfig(),
 		"svc",
 		"dep",
 	)
 
-	ctx := shared.WithRequestID(shared.WithTrace(context.Background(), trace), "req_01")
+	ctx := rttrace.ContextWithRequestID(rttrace.ContextWithTrace(context.Background(), trace), "req_01")
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://example.com/ping", nil)
 	if err != nil {
 		t.Fatalf("NewRequestWithContext() error = %v", err)
@@ -172,8 +170,7 @@ func TestNewHTTPClientSkipsOutboundSuccessLogWhenDisabled(t *testing.T) {
 	client := NewHTTPClient(
 		&http.Client{Transport: base},
 		logger,
-		config.LoggingConfig{Level: "info", OutboundEnabled: false, OutboundLevel: "info"},
-		defaultOutboundConfig(),
+		disabledOutboundConfig(),
 		"svc",
 		"dep",
 	)
@@ -204,8 +201,7 @@ func TestNewHTTPClientLogsOutboundFailureWhenDisabled(t *testing.T) {
 	client := NewHTTPClient(
 		&http.Client{Transport: base},
 		logger,
-		config.LoggingConfig{Level: "info", OutboundEnabled: false, OutboundLevel: "info"},
-		defaultOutboundConfig(),
+		disabledOutboundConfig(),
 		"svc",
 		"dep",
 	)
@@ -234,7 +230,6 @@ func TestNewHTTPClientPreservesCanceledContext(t *testing.T) {
 	client := NewHTTPClient(
 		&http.Client{Transport: base},
 		discardLogger(),
-		config.LoggingConfig{Level: "debug", OutboundEnabled: true, OutboundLevel: "info"},
 		defaultOutboundConfig(),
 		"svc",
 		"dep",
@@ -253,8 +248,8 @@ func TestNewHTTPClientPreservesCanceledContext(t *testing.T) {
 	}
 }
 
-func defaultOutboundConfig() config.OutboundConfig {
-	return config.OutboundConfig{
+func defaultOutboundConfig() Options {
+	return Options{
 		Timeout:               30 * time.Second,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   10,
@@ -262,7 +257,20 @@ func defaultOutboundConfig() config.OutboundConfig {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ResponseHeaderTimeout: 15 * time.Second,
 		ExpectContinueTimeout: time.Second,
+		OutboundLogging: rtlog.OutboundOptions{
+			Enabled: true,
+			Level:   "info",
+		},
 	}
+}
+
+func disabledOutboundConfig() Options {
+	options := defaultOutboundConfig()
+	options.OutboundLogging = rtlog.OutboundOptions{
+		Enabled: false,
+		Level:   "info",
+	}
+	return options
 }
 
 func discardLogger() *slog.Logger {

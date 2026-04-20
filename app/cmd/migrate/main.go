@@ -14,7 +14,7 @@ import (
 	migrations "ai-go-chi-starter/db"
 	"ai-go-chi-starter/internal/config"
 	"ai-go-chi-starter/internal/infra/store/postgres"
-	"ai-go-chi-starter/internal/runtime"
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
 )
 
 func main() {
@@ -23,14 +23,20 @@ func main() {
 	flag.StringVar(&action, "action", "up", "migration action: up, version")
 	flag.Parse()
 
-	logger := runtime.NewBootstrapLogger("migrate", os.Stderr)
+	logger := rtlog.NewBootstrapLogger("migrate", os.Stderr)
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Error("migrate bootstrap failed", "kind", "fatal", "stage", "config", "err", err)
 		os.Exit(1)
 	}
 
-	db, err := postgres.Open(context.Background(), cfg.Database)
+	db, err := postgres.Open(context.Background(), postgres.Options{
+		URL:             cfg.Database.URL,
+		MaxOpenConns:    cfg.Database.MaxOpenConns,
+		MaxIdleConns:    cfg.Database.MaxIdleConns,
+		ConnMaxLifetime: cfg.Database.ConnMaxLifetime,
+		ConnMaxIdleTime: cfg.Database.ConnMaxIdleTime,
+	})
 	if err != nil {
 		logger.Error("migrate startup failed", "kind", "fatal", "stage", "database", "err", err)
 		os.Exit(1)

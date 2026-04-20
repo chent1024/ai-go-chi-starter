@@ -1,38 +1,20 @@
-package runtime
+package logging
 
 import (
 	"context"
 	"log/slog"
 	"net/url"
-	"time"
-
-	"ai-go-chi-starter/internal/config"
 )
 
-type OutboundLogEvent struct {
-	Component string
-	Target    string
-	Method    string
-	URL       string
-	Status    int
-	Latency   time.Duration
-	BytesIn   int64
-	BytesOut  int64
-	Err       error
-}
-
-func LogOutboundSuccess(logger *slog.Logger, cfg config.LoggingConfig, event OutboundLogEvent) {
-	if !cfg.OutboundEnabled || logger == nil {
+func LogOutboundSuccess(logger *slog.Logger, options OutboundOptions, event OutboundEvent) {
+	if !options.Enabled || logger == nil {
 		return
 	}
-	level := parseLevel(cfg.OutboundLevel)
-	if !levelEnabled(cfg, level) {
-		return
-	}
+	level := parseLevel(options.Level)
 	logAtLevel(logger, level, "outbound request completed", outboundAttrs(event)...)
 }
 
-func LogOutboundFailure(logger *slog.Logger, _ config.LoggingConfig, event OutboundLogEvent) {
+func LogOutboundFailure(logger *slog.Logger, event OutboundEvent) {
 	if logger == nil {
 		return
 	}
@@ -54,7 +36,7 @@ func logAtLevel(logger *slog.Logger, level slog.Level, message string, attrs ...
 	logger.Log(context.Background(), level, message, attrs...)
 }
 
-func outboundAttrs(event OutboundLogEvent) []any {
+func outboundAttrs(event OutboundEvent) []any {
 	attrs := []any{
 		"kind", "outbound",
 		"target", event.Target,

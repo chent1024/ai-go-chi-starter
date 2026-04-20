@@ -1,4 +1,4 @@
-package runtime
+package tracing
 
 import (
 	"bytes"
@@ -6,19 +6,17 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
-
-	"ai-go-chi-starter/internal/service/shared"
 )
 
 func TestStartSpanContinuesTraceAndLogsDebugLifecycle(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	parent := shared.NewRootTrace()
-	ctx := shared.WithRequestID(shared.WithTrace(context.Background(), parent), "req_01")
+	parent := NewRootTrace()
+	ctx := ContextWithRequestID(ContextWithTrace(context.Background(), parent), "req_01")
 
 	spanCtx, span := StartSpan(ctx, logger, "example.operation", "component", "test")
-	trace, ok := shared.TraceFromContext(spanCtx)
+	trace, ok := TraceFromContext(spanCtx)
 	if !ok {
 		t.Fatal("trace missing from span context")
 	}

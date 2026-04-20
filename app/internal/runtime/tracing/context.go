@@ -1,10 +1,10 @@
-package shared
+package tracing
 
 import "context"
 
 type requestIDContextKey struct{}
 
-func WithRequestID(ctx context.Context, requestID string) context.Context {
+func ContextWithRequestID(ctx context.Context, requestID string) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}

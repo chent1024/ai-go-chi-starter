@@ -1,4 +1,4 @@
-package runtime
+package metrics
 
 type BuildInfo struct {
 	Service   string `json:"service"`

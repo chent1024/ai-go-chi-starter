@@ -1,27 +1,27 @@
-package runtime
+package drain
 
 import "sync/atomic"
 
-type DrainState struct {
+type State struct {
 	draining       atomic.Bool
 	activeRequests atomic.Int64
 }
 
-func (s *DrainState) BeginDrain() {
+func (s *State) BeginDrain() {
 	if s == nil {
 		return
 	}
 	s.draining.Store(true)
 }
 
-func (s *DrainState) Draining() bool {
+func (s *State) Draining() bool {
 	if s == nil {
 		return false
 	}
 	return s.draining.Load()
 }
 
-func (s *DrainState) StartRequest() bool {
+func (s *State) StartRequest() bool {
 	if s == nil {
 		return true
 	}
@@ -36,14 +36,14 @@ func (s *DrainState) StartRequest() bool {
 	return true
 }
 
-func (s *DrainState) FinishRequest() {
+func (s *State) FinishRequest() {
 	if s == nil {
 		return
 	}
 	s.activeRequests.Add(-1)
 }
 
-func (s *DrainState) ActiveRequests() int64 {
+func (s *State) ActiveRequests() int64 {
 	if s == nil {
 		return 0
 	}

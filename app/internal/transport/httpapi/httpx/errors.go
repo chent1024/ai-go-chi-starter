@@ -15,7 +15,7 @@ func WriteRequestDomainError(w http.ResponseWriter, req *http.Request, err error
 		return
 	}
 	code := shared.Code(err)
-	status := shared.HTTPStatus(err)
+	status := statusFromError(err)
 	details := shared.Details(err)
 	if code == "" || status == 0 {
 		logRequestFailure(req, http.StatusInternalServerError, shared.CodeInternal, shared.Retryable(err), err, nil)
@@ -43,7 +43,7 @@ func WriteRequestError(
 
 func WriteDomainError(w http.ResponseWriter, requestID string, err error) {
 	code := shared.Code(err)
-	status := shared.HTTPStatus(err)
+	status := statusFromError(err)
 	details := shared.Details(err)
 	if code == "" || status == 0 {
 		WriteError(
@@ -57,6 +57,23 @@ func WriteDomainError(w http.ResponseWriter, requestID string, err error) {
 		return
 	}
 	WriteError(w, status, requestID, code, shared.Message(err), shared.Retryable(err), details)
+}
+
+func statusFromError(err error) int {
+	switch shared.KindOf(err) {
+	case shared.KindInvalidArgument:
+		return http.StatusBadRequest
+	case shared.KindNotFound:
+		return http.StatusNotFound
+	case shared.KindNotReady:
+		return http.StatusServiceUnavailable
+	case shared.KindRequestTimeout:
+		return http.StatusGatewayTimeout
+	case shared.KindInternal:
+		return http.StatusInternalServerError
+	default:
+		return 0
+	}
 }
 
 func logRequestFailure(req *http.Request, status int, code string, retryable bool, err any, details any) {

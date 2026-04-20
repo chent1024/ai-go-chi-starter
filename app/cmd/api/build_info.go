@@ -1,6 +1,6 @@
 package main
 
-import "ai-go-chi-starter/internal/runtime"
+import apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 
 var (
 	version   = "dev"
@@ -8,8 +8,8 @@ var (
 	buildTime = "unknown"
 )
 
-func buildInfo() runtime.BuildInfo {
-	return runtime.BuildInfo{
+func buildInfo() apimetrics.BuildInfo {
+	return apimetrics.BuildInfo{
 		Service:   "api",
 		Version:   version,
 		Commit:    commit,

@@ -88,7 +88,6 @@ ai-go-chi-starter/
 ├── Makefile
 ├── Makefile.rules
 ├── .gitignore
-├── go.work
 ├── README.md
 ├── .orch/rules/
 ├── docs/
@@ -413,7 +412,6 @@ DOCKER_POSTGRES_PASSWORD=postgres
 
 创建：
 
-- `go.work`
 - `app/go.mod`
 - `.gitignore`
 - `README.md`
@@ -423,7 +421,7 @@ DOCKER_POSTGRES_PASSWORD=postgres
 完成标准：
 
 - 仓库目录结构已经建立
-- `cd app && go test ./...` 已可执行；若在仓库根执行，则使用 `go test ./app/...`
+- `cd app && go test ./...` 已可执行
 
 ### 第二阶段：Config 与 Runtime
 

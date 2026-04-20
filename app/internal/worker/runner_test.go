@@ -1,4 +1,4 @@
-package main
+package worker
 
 import (
 	"context"
@@ -8,19 +8,19 @@ import (
 	"time"
 )
 
-func TestTickerWorkerPassesCancelableContextToHandler(t *testing.T) {
+func TestTickerPassesCancelableContextToHandler(t *testing.T) {
 	handlerStarted := make(chan struct{}, 1)
 	handlerCanceled := make(chan error, 1)
-	worker := tickerWorker{
-		interval: 1 * time.Millisecond,
-		logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
-		handler: JobHandlerFunc(func(ctx context.Context) error {
+	worker := NewTicker(TickerOptions{
+		Interval: 1 * time.Millisecond,
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Handler: JobHandlerFunc(func(ctx context.Context) error {
 			handlerStarted <- struct{}{}
 			<-ctx.Done()
 			handlerCanceled <- ctx.Err()
 			return nil
 		}),
-	}
+	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

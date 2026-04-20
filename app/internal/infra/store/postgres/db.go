@@ -6,21 +6,28 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"ai-go-chi-starter/internal/config"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func Open(ctx context.Context, cfg config.DatabaseConfig) (*sql.DB, error) {
-	if strings.TrimSpace(cfg.URL) == "" {
+type Options struct {
+	URL             string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+	ConnMaxIdleTime time.Duration
+}
+
+func Open(ctx context.Context, options Options) (*sql.DB, error) {
+	if strings.TrimSpace(options.URL) == "" {
 		return nil, errors.New("APP_DATABASE_URL is required")
 	}
-	db, err := sql.Open("pgx", cfg.URL)
+	db, err := sql.Open("pgx", options.URL)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	configurePool(db, cfg)
+	configurePool(db, options)
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("ping database: %w", err)
@@ -28,14 +35,14 @@ func Open(ctx context.Context, cfg config.DatabaseConfig) (*sql.DB, error) {
 	return db, nil
 }
 
-func configurePool(db *sql.DB, cfg config.DatabaseConfig) {
+func configurePool(db *sql.DB, options Options) {
 	if db == nil {
 		return
 	}
-	db.SetMaxOpenConns(cfg.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.MaxIdleConns)
-	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
-	db.SetConnMaxIdleTime(cfg.ConnMaxIdleTime)
+	db.SetMaxOpenConns(options.MaxOpenConns)
+	db.SetMaxIdleConns(options.MaxIdleConns)
+	db.SetConnMaxLifetime(options.ConnMaxLifetime)
+	db.SetConnMaxIdleTime(options.ConnMaxIdleTime)
 }
 
 type ReadyChecker struct {

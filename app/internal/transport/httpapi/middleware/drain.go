@@ -3,12 +3,12 @@ package middleware
 import (
 	"net/http"
 
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
+	apidrain "ai-go-chi-starter/internal/transport/httpapi/drain"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
-func Drain(state *runtime.DrainState) func(http.Handler) http.Handler {
+func Drain(state *apidrain.State) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		if state == nil {
 			return next

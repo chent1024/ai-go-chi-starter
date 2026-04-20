@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
+	apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 )
 
-func RequestTimeout(timeout time.Duration, logger *slog.Logger, metrics *runtime.Metrics) func(http.Handler) http.Handler {
+func RequestTimeout(timeout time.Duration, logger *slog.Logger, metrics *apimetrics.Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		if timeout <= 0 {
 			return next

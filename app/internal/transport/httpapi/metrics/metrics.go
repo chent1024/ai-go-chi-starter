@@ -1,4 +1,4 @@
-package runtime
+package metrics
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ type requestMetricValue struct {
 	LatencyMsMax int64
 }
 
-func NewMetrics(build BuildInfo) *Metrics {
+func New(build BuildInfo) *Metrics {
 	return &Metrics{
 		startedAt:  time.Now().UTC(),
 		build:      build,

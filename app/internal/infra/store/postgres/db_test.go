@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"ai-go-chi-starter/internal/config"
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
@@ -15,7 +14,7 @@ func TestConfigurePool(t *testing.T) {
 	}
 	defer db.Close()
 
-	configurePool(db, config.DatabaseConfig{
+	configurePool(db, Options{
 		MaxOpenConns:    12,
 		MaxIdleConns:    4,
 		ConnMaxLifetime: 30 * time.Minute,

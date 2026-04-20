@@ -456,7 +456,7 @@ render_arch_rules_content() {
   if [[ "$lang" == "go" ]]; then
     cat <<EOF
 # format:
-# <scope>|<forbidden_scope>|<message>
+# <scope>|<forbidden_scope>|<message>[|<recommended fix>]
 #
 # default layered Go service rules:
 # Add repository-specific extensions in ${prefix}.orch/rules/<target>/local.arch.rules.
@@ -472,7 +472,7 @@ EOF
 
   cat <<'EOF'
 # format:
-# <scope>|<regex>|<message>
+# <scope>|<regex>|<message>[|<recommended fix>]
 #
 # examples:
 # src/domain|src/http|domain must not depend on transport

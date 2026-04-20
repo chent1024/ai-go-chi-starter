@@ -6,13 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
+	apidrain "ai-go-chi-starter/internal/transport/httpapi/drain"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
 func TestDrainRejectsNewRequests(t *testing.T) {
-	var state runtime.DrainState
+	var state apidrain.State
 	state.BeginDrain()
 
 	handler := RequestID(Drain(&state)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +36,7 @@ func TestDrainRejectsNewRequests(t *testing.T) {
 }
 
 func TestDrainAllowsHealthzDuringShutdown(t *testing.T) {
-	var state runtime.DrainState
+	var state apidrain.State
 	state.BeginDrain()
 
 	handler := Drain(&state)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

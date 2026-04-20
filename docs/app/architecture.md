@@ -6,20 +6,31 @@
 - `app/internal/transport/httpapi`：只负责 HTTP 协议层和 middleware
 - `app/internal/service`：负责业务规则和领域服务
 - `app/internal/infra`：负责 PostgreSQL、outbound client 等具体适配器
-- `app/internal/runtime`：负责日志、trace、span、outbound logging 等横切基础设施
+- `app/internal/runtime/logging`：负责 logger、bootstrap logger、redaction、outbound logging
+- `app/internal/runtime/tracing`：负责 request id、trace、span 等横切链路能力
+- `app/internal/transport/httpapi/drain`：负责 HTTP graceful shutdown 期间的新请求拒绝状态
+- `app/internal/transport/httpapi/metrics`：负责 HTTP 指标和 build info 输出
 - `app/internal/config`：仓库里唯一允许读取 env 的包
 - outbound HTTP client 共享一套 transport profile：timeout、keep-alive 连接池、trace 透传、child span 和 outbound logging 都集中配置
 - API 还内置 body limit、安全响应头、build info 和基础 metrics
+
+## 边界约束
+
+- `app/internal/runtime` 根目录不保留 Go 文件；只能使用明确子包
+- `app/internal/service` 不依赖 `internal/config`、`internal/runtime/*`、`internal/transport/*` 或具体 `internal/infra/*`
+- `app/internal/infra/store/*` 不依赖 `internal/transport/*`
+- `app/cmd/*` 不实现 ticker loop、drain 状态机或其他长生命周期运行逻辑
+- HTTP 专属状态和指标必须留在 `app/internal/transport/httpapi/*`，不要回流到 runtime
 
 ## 进程装配
 
 ### API
 
-`app/cmd/api` 负责加载配置、创建 logger、按显式连接池配置打开 PostgreSQL、装配 example service 和 handler，然后启动带 graceful shutdown 的 chi 服务。HTTP server timeout 和 draining 状态也在这里完成 wiring，shutdown 期间会拒绝新的业务请求。
+`app/cmd/api` 负责加载配置、创建 logger、按显式连接池配置打开 PostgreSQL、装配 example service 和 handler，然后启动带 graceful shutdown 的 chi 服务。HTTP server timeout 和 draining 状态的装配也在这里完成，但 drain 状态本身属于 `internal/transport/httpapi/drain`，不放在 cmd 或 runtime 里。
 
 ### Worker
 
-`app/cmd/worker` 负责加载配置、创建 logger，并通过 `JobHandler` 接口运行最小 ticker loop。shutdown 日志会记录 drain 开始、当前 inflight job 数和 drain 完成。
+`app/cmd/worker` 负责加载配置、创建 logger，并装配 `internal/worker` 的运行循环。shutdown 日志会记录 drain 开始、当前 inflight job 数和 drain 完成；loop 本身不放在 `cmd/worker`。
 
 ### Migrate
 
@@ -43,8 +54,8 @@
 - request logger 默认带 `service`、`request_id`、`trace_id`、`span_id`
 - outbound request log 会复用当前 context 中的 `request_id` 和 trace/span 字段
 - `APP_LOG_OUTBOUND_ENABLED` 只控制 outbound 成功日志；失败日志始终保留，级别为 `warn/error`
-- API、worker、migrate 在 logger 完成装配前，使用 bootstrap logger 输出结构化 fatal 日志，避免启动早期只剩裸 stderr
-- runtime 提供最小 span API：`runtime.StartSpan(...).End(...)`
+- API、worker、migrate 在 logger 完成装配前，使用 `internal/runtime/logging` 的 bootstrap logger 输出结构化 fatal 日志，避免启动早期只剩裸 stderr
+- tracing 子包提供最小 span API：`tracing.StartSpan(...).End(...)`
 - span 默认只在 `debug` 级别输出，用于追踪链路，不替代顶层错误日志
 - `/metrics` 除请求总数和延迟总和外，还会暴露 in-flight request、process uptime 和按路由的延迟最大值
 - timeout middleware 会记录 `http_request_timeout_late_write_total{route=...}`，用于发现超时后仍继续写响应的链路

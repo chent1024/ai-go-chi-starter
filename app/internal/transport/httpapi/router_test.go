@@ -11,16 +11,16 @@ import (
 	"strings"
 	"testing"
 
-	"ai-go-chi-starter/internal/config"
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
+	apidrain "ai-go-chi-starter/internal/transport/httpapi/drain"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
+	apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 )
 
 func TestRouterHealthz(t *testing.T) {
 	handler := NewRouter(RouterOptions{
-		Logging: config.LoggingConfig{AccessEnabled: true},
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		AccessLogEnabled: true,
+		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 
 	rec := httptest.NewRecorder()
@@ -32,13 +32,13 @@ func TestRouterHealthz(t *testing.T) {
 }
 
 func TestRouterReadyzReportsDrainState(t *testing.T) {
-	drainState := &runtime.DrainState{}
+	drainState := &apidrain.State{}
 	drainState.BeginDrain()
 
 	handler := NewRouter(RouterOptions{
-		Logging:    config.LoggingConfig{AccessEnabled: true},
-		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
-		DrainState: drainState,
+		AccessLogEnabled: true,
+		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
+		DrainState:       drainState,
 	})
 
 	rec := httptest.NewRecorder()
@@ -60,9 +60,9 @@ func TestRouterReadyzReportsDrainState(t *testing.T) {
 
 func TestRouterReadyzFailure(t *testing.T) {
 	handler := NewRouter(RouterOptions{
-		Logging:      config.LoggingConfig{AccessEnabled: true},
-		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
-		ReadyChecker: readyCheckerFunc(func(ctx context.Context) error { _ = ctx; return errors.New("db down") }),
+		AccessLogEnabled: true,
+		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
+		ReadyChecker:     readyCheckerFunc(func(ctx context.Context) error { _ = ctx; return errors.New("db down") }),
 	})
 
 	rec := httptest.NewRecorder()
@@ -77,9 +77,9 @@ func TestRouterReadyzFailure(t *testing.T) {
 
 func TestRouterVersion(t *testing.T) {
 	handler := NewRouter(RouterOptions{
-		Logging: config.LoggingConfig{AccessEnabled: true},
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		BuildInfo: runtime.BuildInfo{
+		AccessLogEnabled: true,
+		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
+		BuildInfo: apimetrics.BuildInfo{
 			Service:   "api",
 			Version:   "1.2.3",
 			Commit:    "abc123",
@@ -99,11 +99,11 @@ func TestRouterVersion(t *testing.T) {
 }
 
 func TestRouterMetrics(t *testing.T) {
-	metrics := runtime.NewMetrics(runtime.BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
+	metrics := apimetrics.New(apimetrics.BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
 	handler := NewRouter(RouterOptions{
-		Logging: config.LoggingConfig{AccessEnabled: true},
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
-		Metrics: metrics,
+		AccessLogEnabled: true,
+		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Metrics:          metrics,
 	})
 
 	rec := httptest.NewRecorder()
@@ -129,8 +129,8 @@ func TestRouterMetrics(t *testing.T) {
 
 func TestRouterAppliesSecurityHeaders(t *testing.T) {
 	handler := NewRouter(RouterOptions{
-		Logging: config.LoggingConfig{AccessEnabled: true},
-		Logger:  slog.New(slog.NewTextHandler(io.Discard, nil)),
+		AccessLogEnabled: true,
+		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
 
 	rec := httptest.NewRecorder()

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"net/http"
 	"regexp"
 	"testing"
 	"time"
@@ -56,7 +55,7 @@ func TestExampleRepositoryGetNotFound(t *testing.T) {
 		WillReturnError(sql.ErrNoRows)
 
 	_, err = NewExampleRepository(db).Get(context.Background(), "exm_missing")
-	if shared.Code(err) != example.CodeNotFound || shared.HTTPStatus(err) != http.StatusNotFound {
+	if shared.Code(err) != example.CodeNotFound || shared.KindOf(err) != shared.KindNotFound {
 		t.Fatalf("unexpected error = %v", err)
 	}
 }

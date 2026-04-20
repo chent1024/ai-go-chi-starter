@@ -5,18 +5,27 @@ import (
 	"net/http"
 	"time"
 
-	"ai-go-chi-starter/internal/config"
-	"ai-go-chi-starter/internal/runtime"
-	"ai-go-chi-starter/internal/service/shared"
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 )
 
 const traceparentHeader = "Traceparent"
 
+type Options struct {
+	Timeout               time.Duration
+	MaxIdleConns          int
+	MaxIdleConnsPerHost   int
+	IdleConnTimeout       time.Duration
+	TLSHandshakeTimeout   time.Duration
+	ResponseHeaderTimeout time.Duration
+	ExpectContinueTimeout time.Duration
+	OutboundLogging       rtlog.OutboundOptions
+}
+
 func NewHTTPClient(
 	base *http.Client,
 	logger *slog.Logger,
-	logCfg config.LoggingConfig,
-	outboundCfg config.OutboundConfig,
+	options Options,
 	component string,
 	target string,
 ) *http.Client {
@@ -24,28 +33,28 @@ func NewHTTPClient(
 		base = &http.Client{}
 	}
 	clone := *base
-	clone.Timeout = outboundCfg.Timeout
+	clone.Timeout = options.Timeout
 	clone.Transport = newLoggingRoundTripper(
-		configureTransport(clone.Transport, outboundCfg),
+		configureTransport(clone.Transport, options),
 		logger,
-		logCfg,
+		options.OutboundLogging,
 		component,
 		target,
 	)
 	return &clone
 }
 
-func configureTransport(base http.RoundTripper, cfg config.OutboundConfig) http.RoundTripper {
+func configureTransport(base http.RoundTripper, options Options) http.RoundTripper {
 	transport, ok := cloneTransport(base)
 	if !ok {
 		return base
 	}
-	transport.MaxIdleConns = cfg.MaxIdleConns
-	transport.MaxIdleConnsPerHost = cfg.MaxIdleConnsPerHost
-	transport.IdleConnTimeout = cfg.IdleConnTimeout
-	transport.TLSHandshakeTimeout = cfg.TLSHandshakeTimeout
-	transport.ResponseHeaderTimeout = cfg.ResponseHeaderTimeout
-	transport.ExpectContinueTimeout = cfg.ExpectContinueTimeout
+	transport.MaxIdleConns = options.MaxIdleConns
+	transport.MaxIdleConnsPerHost = options.MaxIdleConnsPerHost
+	transport.IdleConnTimeout = options.IdleConnTimeout
+	transport.TLSHandshakeTimeout = options.TLSHandshakeTimeout
+	transport.ResponseHeaderTimeout = options.ResponseHeaderTimeout
+	transport.ExpectContinueTimeout = options.ExpectContinueTimeout
 	return transport
 }
 
@@ -67,7 +76,7 @@ func cloneTransport(base http.RoundTripper) (*http.Transport, bool) {
 func newLoggingRoundTripper(
 	base http.RoundTripper,
 	logger *slog.Logger,
-	cfg config.LoggingConfig,
+	options rtlog.OutboundOptions,
 	component string,
 	target string,
 ) http.RoundTripper {
@@ -75,7 +84,7 @@ func newLoggingRoundTripper(
 		if req == nil {
 			return base.RoundTrip(req)
 		}
-		spanCtx, span := runtime.StartSpan(
+		spanCtx, span := rttrace.StartSpan(
 			req.Context(),
 			logger,
 			"outbound.http.roundtrip",
@@ -86,7 +95,7 @@ func newLoggingRoundTripper(
 		req = withTraceparent(req)
 		startedAt := time.Now()
 		resp, err := base.RoundTrip(req)
-		event := runtime.OutboundLogEvent{
+		event := rtlog.OutboundEvent{
 			Component: component,
 			Target:    target,
 			Method:    req.Method,
@@ -102,15 +111,15 @@ func newLoggingRoundTripper(
 		}
 		spanLogger := span.Logger()
 		if err != nil {
-			runtime.LogOutboundFailure(spanLogger, cfg, event)
+			rtlog.LogOutboundFailure(spanLogger, event)
 		} else {
-			runtime.LogOutboundSuccess(spanLogger, cfg, event)
+			rtlog.LogOutboundSuccess(spanLogger, options, event)
 		}
 		span.End(
 			err,
 			"target", target,
 			"method", req.Method,
-			runtime.LogFieldStatus, event.Status,
+			rtlog.LogFieldStatus, event.Status,
 		)
 		return resp, err
 	})
@@ -120,7 +129,7 @@ func withTraceparent(req *http.Request) *http.Request {
 	if req == nil || req.Header.Get(traceparentHeader) != "" {
 		return req
 	}
-	trace, ok := shared.TraceFromContext(req.Context())
+	trace, ok := rttrace.TraceFromContext(req.Context())
 	if !ok || !trace.Valid() {
 		return req
 	}

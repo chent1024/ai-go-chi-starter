@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"time"
 
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
+	apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 )
 
-func Metrics(metrics *runtime.Metrics) func(http.Handler) http.Handler {
+func Metrics(metrics *apimetrics.Metrics) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		if metrics == nil {
 			return next

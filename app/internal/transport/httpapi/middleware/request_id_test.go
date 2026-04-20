@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ai-go-chi-starter/internal/service/shared"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 )
 
 func TestRequestIDGeneratesHeader(t *testing.T) {
@@ -13,7 +13,7 @@ func TestRequestIDGeneratesHeader(t *testing.T) {
 		if r.Header.Get("X-Request-Id") == "" {
 			t.Fatal("request id header missing in request")
 		}
-		if requestID, ok := shared.RequestIDFromContext(r.Context()); !ok || requestID == "" {
+		if requestID, ok := rttrace.RequestIDFromContext(r.Context()); !ok || requestID == "" {
 			t.Fatal("request id missing from context")
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -32,7 +32,7 @@ func TestRequestIDPreservesInboundHeader(t *testing.T) {
 		if got := r.Header.Get("X-Request-Id"); got != "req_inbound" {
 			t.Fatalf("request id = %q", got)
 		}
-		if got, ok := shared.RequestIDFromContext(r.Context()); !ok || got != "req_inbound" {
+		if got, ok := rttrace.RequestIDFromContext(r.Context()); !ok || got != "req_inbound" {
 			t.Fatalf("context request id = %q", got)
 		}
 	}))

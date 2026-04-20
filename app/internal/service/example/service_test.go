@@ -3,7 +3,6 @@ package example
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
 	"time"
 
@@ -35,7 +34,7 @@ func TestServiceCreate(t *testing.T) {
 
 func TestServiceCreateRejectsEmptyName(t *testing.T) {
 	_, err := NewService(&stubRepository{}).Create(context.Background(), CreateInput{Name: "  "})
-	if shared.Code(err) != shared.CodeInvalidArgument || shared.HTTPStatus(err) != http.StatusBadRequest {
+	if shared.Code(err) != shared.CodeInvalidArgument || shared.KindOf(err) != shared.KindInvalidArgument {
 		t.Fatalf("unexpected error = %v", err)
 	}
 	details, ok := shared.Details(err).(shared.ValidationDetails)

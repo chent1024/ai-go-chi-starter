@@ -120,7 +120,7 @@ app/dist/v0.1.0/linux-amd64/migrate
 
 补充说明：
 
-- 根目录提供 `go.work`，因此 `go run ./app/cmd/api`、`go build ./app/cmd/migrate`、`go test ./app/...` 这类 Go 命令也可以直接在仓库根执行
+- 原生 Go 命令默认在 `app/` 目录执行；仓库根保留 `make build`、`make run-api`、`make test-integration` 等统一入口
 - 普通 `go run` 开发场景下，`/version` 通常显示 `dev/unknown/unknown`
 - 通过 `make build*` 或 `make release-build*` 构建时，会统一注入真实 build 信息
 

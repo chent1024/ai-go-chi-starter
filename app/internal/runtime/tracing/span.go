@@ -1,4 +1,4 @@
-package runtime
+package tracing
 
 import (
 	"context"
@@ -64,7 +64,7 @@ func (s *Span) End(err error, attrs ...any) {
 	s.logger.Log(s.ctx, slog.LevelDebug, "span completed", logAttrs...)
 }
 
-func (s *Span) startAttrs(_ any, attrs ...any) []any {
+func (s *Span) startAttrs(_ Trace, attrs ...any) []any {
 	logAttrs := []any{
 		"kind", "span",
 		LogFieldSpanName, s.name,

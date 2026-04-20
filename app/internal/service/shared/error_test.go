@@ -7,8 +7,8 @@ import (
 func TestErrInvalidArgumentCarriesFieldErrors(t *testing.T) {
 	err := ErrInvalidArgument("name is required", WithFieldErrors(RequiredField("name")))
 
-	if Code(err) != CodeInvalidArgument || HTTPStatus(err) != StatusBadRequest {
-		t.Fatalf("unexpected error metadata: code=%q status=%d", Code(err), HTTPStatus(err))
+	if Code(err) != CodeInvalidArgument || KindOf(err) != KindInvalidArgument {
+		t.Fatalf("unexpected error metadata: code=%q kind=%q", Code(err), KindOf(err))
 	}
 
 	details, ok := Details(err).(ValidationDetails)

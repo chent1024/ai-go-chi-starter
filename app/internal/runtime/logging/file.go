@@ -1,4 +1,4 @@
-package runtime
+package logging
 
 import (
 	"context"
@@ -10,8 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"ai-go-chi-starter/internal/config"
 )
 
 type dailyLogWriter struct {
@@ -125,12 +123,12 @@ func cleanupLogFiles(
 	return nil
 }
 
-func StartLogCleanup(ctx context.Context, logger *slog.Logger, cfg config.LoggingConfig) {
-	if logger == nil || cfg.Output == "stdout" {
+func StartCleanup(ctx context.Context, logger *slog.Logger, options Options) {
+	if logger == nil || options.Output == "stdout" {
 		return
 	}
-	runLogCleanup(logger, cfg)
-	ticker := time.NewTicker(cfg.CleanupInterval)
+	runLogCleanup(logger, options)
+	ticker := time.NewTicker(options.CleanupInterval)
 	go func() {
 		defer ticker.Stop()
 		for {
@@ -138,20 +136,20 @@ func StartLogCleanup(ctx context.Context, logger *slog.Logger, cfg config.Loggin
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				runLogCleanup(logger, cfg)
+				runLogCleanup(logger, options)
 			}
 		}
 	}()
 }
 
-func runLogCleanup(logger *slog.Logger, cfg config.LoggingConfig) {
-	if err := CleanupLogFiles(cfg.Dir, cfg.RetentionDays, cfg.Location); err != nil {
+func runLogCleanup(logger *slog.Logger, options Options) {
+	if err := CleanupLogFiles(options.Dir, options.RetentionDays, options.Location); err != nil {
 		logger.Error(
 			"log cleanup failed",
 			LogFieldComponent, "logging",
 			LogFieldErrorCode, "LOG_CLEANUP_FAILED",
 			"err", err,
-			"log_dir", cfg.Dir,
+			"log_dir", options.Dir,
 		)
 	}
 }

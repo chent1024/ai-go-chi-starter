@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"ai-go-chi-starter/internal/service/shared"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
 )
 
@@ -11,17 +11,17 @@ func Trace(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		trace := inboundTrace(req)
 		w.Header().Set(httpx.TraceparentHeader(), trace.Traceparent())
-		ctx := shared.WithTrace(req.Context(), trace)
+		ctx := rttrace.ContextWithTrace(req.Context(), trace)
 		httpx.ReplaceRequestContext(req, ctx)
 		next.ServeHTTP(w, req)
 	})
 }
 
-func inboundTrace(req *http.Request) shared.Trace {
+func inboundTrace(req *http.Request) rttrace.Trace {
 	if req != nil {
-		if parent, ok := shared.ParseTraceparent(req.Header.Get(httpx.TraceparentHeader())); ok {
-			return shared.NewChildTrace(parent)
+		if parent, ok := rttrace.ParseTraceparent(req.Header.Get(httpx.TraceparentHeader())); ok {
+			return rttrace.NewChildTrace(parent)
 		}
 	}
-	return shared.NewRootTrace()
+	return rttrace.NewRootTrace()
 }

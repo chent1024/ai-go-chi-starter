@@ -1,4 +1,4 @@
-package runtime
+package metrics
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestMetricsServeHTTPIncludesInFlightAndLatencyMax(t *testing.T) {
-	metrics := NewMetrics(BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
+	metrics := New(BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
 	metrics.IncInFlight()
 	metrics.ObserveHTTPRequest("/healthz", http.MethodGet, http.StatusOK, 125*time.Millisecond)
 
@@ -29,7 +29,7 @@ func TestMetricsServeHTTPIncludesInFlightAndLatencyMax(t *testing.T) {
 }
 
 func TestMetricsServeHTTPIncludesLateWriteSeries(t *testing.T) {
-	metrics := NewMetrics(BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
+	metrics := New(BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
 	metrics.ObserveTimeoutLateWrite("/slow", 2)
 
 	rec := httptest.NewRecorder()

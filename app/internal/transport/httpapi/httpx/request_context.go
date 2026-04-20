@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"ai-go-chi-starter/internal/service/shared"
+	rtlog "ai-go-chi-starter/internal/runtime/logging"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 )
 
 const (
@@ -30,7 +31,7 @@ func RequestID(req *http.Request) string {
 	if value := strings.TrimSpace(req.Header.Get("X-Request-ID")); value != "" {
 		return value
 	}
-	if value, ok := shared.RequestIDFromContext(req.Context()); ok {
+	if value, ok := rttrace.RequestIDFromContext(req.Context()); ok {
 		return value
 	}
 	return ""
@@ -60,10 +61,10 @@ func RequestLogger(req *http.Request, base *slog.Logger) *slog.Logger {
 		return nil
 	}
 	if requestID := RequestID(req); requestID != "" {
-		logger = logger.With(shared.LogFieldRequestID, requestID)
+		logger = logger.With(rtlog.LogFieldRequestID, requestID)
 	}
-	if trace, ok := shared.TraceFromContext(req.Context()); ok {
-		logger = logger.With(shared.TraceLogFields(trace)...)
+	if trace, ok := rttrace.TraceFromContext(req.Context()); ok {
+		logger = logger.With(rttrace.TraceLogFields(trace)...)
 	}
 	return logger
 }

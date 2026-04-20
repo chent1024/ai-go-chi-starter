@@ -282,6 +282,7 @@ manifest 核心字段：
 - `verify-contract-sync.sh` 提供的是目录级强提醒模板，不试图自动推断“哪一次接口代码修改一定意味着契约变化”；最终仍建议配合 review 或 API diff 工具。
 - `verify-arch.sh` 是最保守的占位模板，建议目标仓库自行补分层规则。
 - `verify-arch.sh` 现在支持后端选择：`text` 继续使用保守的文本匹配；Go target 可配置 `ARCH_BACKEND=go_imports`，基于真实 import graph 校验目录分层依赖。
+- `verify-arch.sh` / `verify-arch-go.py` 的规则格式兼容三段式，也支持可选第 4 段 `recommended fix`；命中时会在失败输出里提示推荐迁移位置。
 - `GO_LAYOUT_PROFILE=service_layered` 只针对 Go target；新建 Go 仓库默认启用这套 required dirs，已有仓库安装 rules 时不会强制打开，避免误伤现有结构。
 - `service_layered` 还会为新建 Go 仓默认填充一组保守的 `LAYOUT_FORBIDDEN_DIRS`，用于阻止常见漂移目录，例如 `internal/handlers`、`internal/repository`、`internal/storage`。
 - `verify-contract-parity.sh` 当前内置 `manifest` backend，适合先让仓库自行导出 `route manifest` 与 `contract manifest` 再做一致性对比；后续可在此之上扩展 Go+OpenAPI 等专用适配器。

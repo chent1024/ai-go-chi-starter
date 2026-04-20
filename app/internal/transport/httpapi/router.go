@@ -9,10 +9,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"ai-go-chi-starter/internal/config"
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
+	apidrain "ai-go-chi-starter/internal/transport/httpapi/drain"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
+	apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 	"ai-go-chi-starter/internal/transport/httpapi/middleware"
 	v1 "ai-go-chi-starter/internal/transport/httpapi/v1"
 )
@@ -22,15 +22,15 @@ type ReadyChecker interface {
 }
 
 type RouterOptions struct {
-	Logging        config.LoggingConfig
-	RequestTimeout time.Duration
-	MaxBodyBytes   int64
-	DrainState     *runtime.DrainState
-	Logger         *slog.Logger
-	BuildInfo      runtime.BuildInfo
-	Metrics        *runtime.Metrics
-	ExampleHandler *v1.ExampleHandler
-	ReadyChecker   ReadyChecker
+	AccessLogEnabled bool
+	RequestTimeout   time.Duration
+	MaxBodyBytes     int64
+	DrainState       *apidrain.State
+	Logger           *slog.Logger
+	BuildInfo        apimetrics.BuildInfo
+	Metrics          *apimetrics.Metrics
+	ExampleHandler   *v1.ExampleHandler
+	ReadyChecker     ReadyChecker
 }
 
 func NewRouter(options RouterOptions) http.Handler {
@@ -44,7 +44,7 @@ func NewRouter(options RouterOptions) http.Handler {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Trace)
 	r.Use(middleware.SecurityHeaders)
-	r.Use(middleware.AccessLog(logger, options.Logging.AccessEnabled))
+	r.Use(middleware.AccessLog(logger, options.AccessLogEnabled))
 	r.Use(middleware.Metrics(options.Metrics))
 	r.Use(middleware.Drain(options.DrainState))
 	r.Use(middleware.BodyLimit(options.MaxBodyBytes))

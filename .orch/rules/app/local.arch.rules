@@ -1,2 +1,7 @@
 # Repository-specific ARCH rule extensions preserved across upgrade.
 # Base file: .orch/rules/app/arch.rules
+app/internal/service|app/internal/infra|service must not depend on concrete infra
+app/internal/service|app/internal/config|service must not depend on config
+app/internal/service|app/internal/runtime|service must not depend on runtime packages
+app/internal/transport/httpapi/drain|app/internal/runtime|http drain must not depend on runtime
+app/internal/transport/httpapi/metrics|app/internal/runtime|http metrics must not depend on runtime

@@ -3,15 +3,31 @@ package shared
 import "errors"
 
 type Error struct {
-	code       string
-	message    string
-	retryable  bool
-	httpStatus int
-	details    any
-	err        error
+	code      string
+	message   string
+	kind      Kind
+	retryable bool
+	details   any
+	err       error
 }
 
+type Kind string
+
+const (
+	KindInternal        Kind = "internal"
+	KindInvalidArgument Kind = "invalid_argument"
+	KindNotReady        Kind = "not_ready"
+	KindRequestTimeout  Kind = "request_timeout"
+	KindNotFound        Kind = "not_found"
+)
+
 type ErrorOption func(*Error)
+
+func WithKind(kind Kind) ErrorOption {
+	return func(target *Error) {
+		target.kind = kind
+	}
+}
 
 func WithRetryable(retryable bool) ErrorOption {
 	return func(target *Error) {
@@ -25,16 +41,15 @@ func WithDetails(details any) ErrorOption {
 	}
 }
 
-func NewError(code, message string, httpStatus int, options ...ErrorOption) error {
-	return Wrap(nil, code, message, httpStatus, options...)
+func NewError(code, message string, options ...ErrorOption) error {
+	return Wrap(nil, code, message, options...)
 }
 
-func Wrap(err error, code, message string, httpStatus int, options ...ErrorOption) error {
+func Wrap(err error, code, message string, options ...ErrorOption) error {
 	target := &Error{
-		code:       code,
-		message:    message,
-		httpStatus: httpStatus,
-		err:        err,
+		code:    code,
+		message: message,
+		err:     err,
 	}
 	for _, option := range options {
 		if option != nil {
@@ -52,7 +67,10 @@ func MarkRetryable(err error) error {
 	if details := Details(err); details != nil {
 		options = append(options, WithDetails(details))
 	}
-	return Wrap(err, Code(err), Message(err), HTTPStatus(err), options...)
+	if kind := KindOf(err); kind != "" {
+		options = append(options, WithKind(kind))
+	}
+	return Wrap(err, Code(err), Message(err), options...)
 }
 
 func (e *Error) Error() string {
@@ -102,12 +120,12 @@ func Retryable(err error) bool {
 	return errors.As(err, &target) && target.retryable
 }
 
-func HTTPStatus(err error) int {
+func KindOf(err error) Kind {
 	var target *Error
-	if errors.As(err, &target) && target.httpStatus != 0 {
-		return target.httpStatus
+	if errors.As(err, &target) {
+		return target.kind
 	}
-	return 0
+	return ""
 }
 
 func Details(err error) any {

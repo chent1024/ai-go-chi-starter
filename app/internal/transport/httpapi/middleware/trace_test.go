@@ -5,12 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ai-go-chi-starter/internal/service/shared"
+	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 )
 
 func TestTraceAddsTraceparent(t *testing.T) {
 	handler := Trace(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		trace, ok := shared.TraceFromContext(r.Context())
+		trace, ok := rttrace.TraceFromContext(r.Context())
 		if !ok || !trace.Valid() {
 			t.Fatal("trace missing from context")
 		}

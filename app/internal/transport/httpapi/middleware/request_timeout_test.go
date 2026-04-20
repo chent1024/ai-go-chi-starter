@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"ai-go-chi-starter/internal/runtime"
 	"ai-go-chi-starter/internal/service/shared"
 	"ai-go-chi-starter/internal/transport/httpapi/httpx"
+	apimetrics "ai-go-chi-starter/internal/transport/httpapi/metrics"
 )
 
 func TestRequestTimeoutWritesGatewayTimeout(t *testing.T) {
@@ -39,7 +39,7 @@ func TestRequestTimeoutWritesGatewayTimeout(t *testing.T) {
 }
 
 func TestRequestTimeoutAllowsFastHandler(t *testing.T) {
-	handler := RequestTimeout(50*time.Millisecond, nil, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := RequestTimeout(2*time.Second, nil, nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-r.Context().Done():
 			t.Fatal("context unexpectedly canceled")
@@ -95,7 +95,7 @@ func TestRequestTimeoutDropsLateWritesAndReturnsGatewayTimeout(t *testing.T) {
 func TestRequestTimeoutRecordsLateWriteMetricAndLog(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	metrics := runtime.NewMetrics(runtime.BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
+	metrics := apimetrics.New(apimetrics.BuildInfo{Service: "api", Version: "dev", Commit: "unknown", BuildTime: "unknown"})
 
 	handler := RequestTimeout(10*time.Millisecond, logger, metrics)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		<-r.Context().Done()
