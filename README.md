@@ -41,6 +41,7 @@ gh repo create <new-repo-name> \
 - 改 API 路由、字段或错误语义时，必须同步 `docs/app/api.md`、`app/openapi/openapi.yaml` 和测试
 - 改配置时，必须同步 `deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/app/config.md`
 - 改 runtime wiring、并发、存储、契约或 migration 时，必须跑 `make verify-strict`
+- 改性能相关逻辑时，额外跑 `make verify-perf`
 
 Codex 扩展这个模板前，建议先读 [docs/app/codex-guide.md](/Users/xihe0000/workspace/code/ai-go-chi-starter/docs/app/codex-guide.md) 和 [docs/app/recipes/add-domain.md](/Users/xihe0000/workspace/code/ai-go-chi-starter/docs/app/recipes/add-domain.md)。
 
@@ -122,6 +123,7 @@ make run-worker
 
 - `make verify`
 - `make verify-strict`
+- `make verify-perf`
 - `make test-integration`
 - `make smoke`
 

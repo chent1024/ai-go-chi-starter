@@ -32,6 +32,7 @@
 - 改 API surface 时，必须同步 `docs/app/api.md`、`app/openapi/openapi.yaml` 和测试
 - 改配置时，必须同步 `deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/app/config.md`
 - 改 runtime wiring、并发、存储、契约或 migration 时，必须跑 `make verify-strict`
+- 改性能相关逻辑时，必须额外跑 `make verify-perf`
 
 ## 推荐工作流
 
@@ -40,6 +41,7 @@
 3. 改代码时同步改测试和文档
 4. 普通改动跑 `make verify`
 5. 涉及 runtime / storage / migration / contract 的改动跑 `make verify-strict`
+6. 涉及性能路径或 benchmark 相关改动时，额外跑 `make verify-perf`
 
 ## 扩展入口
 
@@ -70,4 +72,4 @@
 - 不要在 `runtime/logging`、`runtime/tracing` 之外重新声明 `LogField*` 常量
 - 不要为了单个新需求直接新建 `app/internal/foo`、`app/internal/runtime/bar` 或 `app/internal/transport/httpapi/baz`
 - 不要因为一个新需求把 `example` 域抽成新的大框架
-- 不要跳过 `make verify` / `make verify-strict`
+- 不要跳过 `make verify` / `make verify-strict` / `make verify-perf`

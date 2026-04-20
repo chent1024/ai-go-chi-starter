@@ -682,9 +682,9 @@ render_makefile_rules_content() {
       echo '	GOBIN=$(TOOLS_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)'
       echo
     fi
-    echo '.PHONY: verify verify-strict verify-common'
+    echo '.PHONY: verify verify-strict verify-perf verify-common'
     for i in "${!target_names[@]}"; do
-      printf '.PHONY: verify-%s verify-strict-%s\n' "${target_names[$i]}" "${target_names[$i]}"
+      printf '.PHONY: verify-%s verify-strict-%s verify-perf-%s\n' "${target_names[$i]}" "${target_names[$i]}" "${target_names[$i]}"
     done
     echo
     printf 'verify: verify-common'
@@ -695,6 +695,11 @@ render_makefile_rules_content() {
     printf 'verify-strict: verify'
     for i in "${!target_names[@]}"; do
       printf ' verify-strict-%s' "${target_names[$i]}"
+    done
+    echo
+    printf 'verify-perf: verify-common'
+    for i in "${!target_names[@]}"; do
+      printf ' verify-perf-%s' "${target_names[$i]}"
     done
     echo
     echo
@@ -728,7 +733,6 @@ render_makefile_rules_content() {
         echo
         echo "verify-strict-$name: verify-$name"
         echo "	${root_cmd} go test -race ./..."
-        printf '\t%s go test -run '\''^$$'\'' -bench . -benchmem ./...\n' "$root_cmd"
       elif [[ "$lang" == "ts" ]]; then
         echo "verify-$name:"
         echo "	${npm_prefix} run build"
@@ -738,11 +742,15 @@ render_makefile_rules_content() {
         echo "	bash .orch/rules/scripts/verify-config-docs.sh .orch/rules/$name/rules.env"
         echo
         echo "verify-strict-$name: verify-$name"
+        echo
+        echo "verify-perf-$name: verify-$name"
       else
         echo "verify-$name:"
         echo "	bash .orch/rules/scripts/verify-config-docs.sh .orch/rules/$name/rules.env"
         echo
         echo "verify-strict-$name: verify-$name"
+        echo
+        echo "verify-perf-$name: verify-$name"
       fi
       echo "	bash .orch/rules/scripts/verify-doc-sync.sh .orch/rules/$name/rules.env"
       echo "	bash .orch/rules/scripts/verify-layout.sh .orch/rules/$name/rules.env"
@@ -751,6 +759,11 @@ render_makefile_rules_content() {
       echo "	bash .orch/rules/scripts/verify-change-scope.sh .orch/rules/$name/rules.env"
       echo "	bash .orch/rules/scripts/verify-migrations.sh .orch/rules/$name/rules.env"
       echo "	bash .orch/rules/scripts/verify-arch.sh .orch/rules/$name/rules.env"
+      if [[ "$lang" == "go" ]]; then
+        echo
+        echo "verify-perf-$name: verify-$name"
+        printf '\t%s go test -run '\''^$$'\'' -bench . -benchmem ./...\n' "$root_cmd"
+      fi
       echo
     done
   }

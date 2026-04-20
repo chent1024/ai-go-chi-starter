@@ -6,11 +6,13 @@ GOLANGCI_LINT_ARGS ?= --tests=false
 
 include .orch/rules/make/verify.mk
 
-.PHONY: fmt fmt-write lint test race bench tools verify verify-strict
+.PHONY: fmt fmt-write lint test race bench tools verify verify-strict verify-perf
 
 verify: fmt lint test verify-config-docs verify-generated verify-secrets
 
-verify-strict: verify race bench verify-contract-sync verify-migrations verify-arch
+verify-strict: verify race verify-contract-sync verify-migrations verify-arch
+
+verify-perf: verify bench
 
 fmt:
 	@out=$$(cd $(GO_MODULE_DIR) && gofmt -l $$(find . -type f -name '*.go' -not -path './.tools/*')); \

@@ -1,14 +1,15 @@
 # Go 仓库约束
 
-这个仓库不依赖 prompt 自觉执行规则。所有改动默认必须通过 `make verify`；涉及并发、性能、存储、队列、runtime wiring、契约或 migration 的改动，必须通过 `make verify-strict`。
+这个仓库不依赖 prompt 自觉执行规则。所有改动默认必须通过 `make verify`；涉及并发、存储、队列、runtime wiring、契约或 migration 的改动，必须通过 `make verify-strict`；性能相关改动必须额外通过 `make verify-perf`。
 
 ## 1. 强制验证
 
 - 普通改动完成后必须执行 `make verify`
-- 涉及并发、性能、存储、队列、runtime wiring、契约或 migration 的改动，必须执行 `make verify-strict`
+- 涉及并发、存储、队列、runtime wiring、契约或 migration 的改动，必须执行 `make verify-strict`
+- 性能相关改动必须额外执行 `make verify-perf`
 - 不允许把“代码已改但未验证”视为完成态
 - 用户请求“提交”或“推送”时，必须先完成对应验证，再执行 `git add`、`git commit`、`git push`
-- `make verify` 或 `make verify-strict` 未通过前，不得将提交、推送、已完成或“可稍后补验证”视为可接受状态
+- `make verify`、`make verify-strict` 或 `make verify-perf` 未通过前，不得将提交、推送、已完成或“可稍后补验证”视为可接受状态
 - 除非用户明确要求，不得建议或使用 `--no-verify`、跳过 hooks 或其他绕过仓库校验的做法
 
 ## 2. 约束入口

@@ -8,11 +8,12 @@ $(GOLANGCI_LINT):
 	mkdir -p $(TOOLS_BIN)
 	GOBIN=$(TOOLS_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
-.PHONY: verify verify-strict verify-common
-.PHONY: verify-app verify-strict-app
+.PHONY: verify verify-strict verify-perf verify-common
+.PHONY: verify-app verify-strict-app verify-perf-app
 
 verify: verify-common verify-app
 verify-strict: verify verify-strict-app
+verify-perf: verify-common verify-perf-app
 
 verify-common:
 	bash .orch/rules/scripts/verify-generated.sh .orch/rules/global.env
@@ -31,7 +32,6 @@ verify-app: $(GOLANGCI_LINT)
 
 verify-strict-app: verify-app
 	cd app && go test -race ./...
-	cd app && go test -run '^$$' -bench . -benchmem ./...
 	bash .orch/rules/scripts/verify-doc-sync.sh .orch/rules/app/rules.env
 	bash .orch/rules/scripts/verify-layout.sh .orch/rules/app/rules.env
 	bash .orch/rules/scripts/verify-contract-parity.sh .orch/rules/app/rules.env
@@ -39,3 +39,6 @@ verify-strict-app: verify-app
 	bash .orch/rules/scripts/verify-change-scope.sh .orch/rules/app/rules.env
 	bash .orch/rules/scripts/verify-migrations.sh .orch/rules/app/rules.env
 	bash .orch/rules/scripts/verify-arch.sh .orch/rules/app/rules.env
+
+verify-perf-app: verify-app
+	cd app && go test -run '^$$' -bench . -benchmem ./...

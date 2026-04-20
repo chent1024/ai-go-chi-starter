@@ -11,10 +11,11 @@
 
 ## 默认假设
 
-- 仓库使用 `make verify` 和 `make verify-strict`
+- 仓库使用 `make verify`、`make verify-strict` 和 `make verify-perf`
 - 存在 `internal/config/config.go` 或等价配置入口
 - 普通 `make verify` 使用 `go test`
-- `make verify-strict` 再叠加 `go test -race` 和 `go test -bench`
+- `make verify-strict` 再叠加 `go test -race`
+- `make verify-perf` 负责 `go test -bench`
 - 希望通过 `.orch/rules/make/verify.mk` 接入可移植约束
 - 新建 Go 服务更接近这种目录结构：
   - `cmd/{api,worker}`
