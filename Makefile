@@ -6,6 +6,10 @@ APP_DIST_DIR ?= $(CURDIR)/$(APP_DIR)/dist
 APP_DEV_COMPOSE_FILE ?= $(CURDIR)/deploy/docker-compose.dev.yaml
 APP_DEV_ENV_FILE ?= $(CURDIR)/deploy/.env.dev.example
 DOCKER_COMPOSE ?= docker compose
+SQLC ?= $(TOOLS_BIN)/sqlc
+SQLC_VERSION ?= 1.30.0
+SQLC_OS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
+SQLC_ARCH ?= $(shell uname -m | sed 's/^x86_64$$/amd64/; s/^amd64$$/amd64/; s/^aarch64$$/arm64/; s/^arm64$$/arm64/')
 VERSION ?= dev
 COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_TIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -17,7 +21,16 @@ GO_LDFLAGS ?= -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildT
 .PHONY: build build-api build-worker build-migrate
 .PHONY: release-build release-build-api release-build-worker release-build-migrate
 .PHONY: run-api run-worker migrate migrate-up migrate-version
-.PHONY: dev-up dev-down dev-logs dev-ps test-integration smoke
+.PHONY: dev-up dev-down dev-logs dev-ps test-integration smoke sqlc-generate sqlc-verify
+
+$(SQLC):
+	mkdir -p $(TOOLS_BIN)
+	test "$(SQLC_OS)" = "darwin" -o "$(SQLC_OS)" = "linux"
+	test "$(SQLC_ARCH)" = "amd64" -o "$(SQLC_ARCH)" = "arm64"
+	curl -fsSL -o $(TOOLS_BIN)/sqlc.tar.gz https://github.com/sqlc-dev/sqlc/releases/download/v$(SQLC_VERSION)/sqlc_$(SQLC_VERSION)_$(SQLC_OS)_$(SQLC_ARCH).tar.gz
+	tar -xzf $(TOOLS_BIN)/sqlc.tar.gz -C $(TOOLS_BIN) sqlc
+	rm -f $(TOOLS_BIN)/sqlc.tar.gz
+	chmod +x $(SQLC)
 
 build:
 	$(MAKE) build-api
@@ -85,3 +98,17 @@ test-integration:
 
 smoke:
 	bash scripts/app/smoke.sh
+
+sqlc-generate: $(SQLC)
+	cd $(APP_DIR) && $(SQLC) generate
+
+sqlc-verify: $(SQLC)
+	tmpdir=$$(mktemp -d); \
+	trap 'rm -rf "$$tmpdir"' EXIT; \
+	outdir="$(CURDIR)/$(APP_DIR)/internal/infra/store/postgres/sqlc"; \
+	mkdir -p "$$tmpdir/before"; \
+	if [ -d "$$outdir" ]; then cp -R "$$outdir/." "$$tmpdir/before/"; fi; \
+	cd $(APP_DIR) && $(SQLC) generate; \
+	diff -ru "$$tmpdir/before" "$$outdir"
+
+verify-app: sqlc-verify

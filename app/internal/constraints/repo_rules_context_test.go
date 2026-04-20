@@ -2,7 +2,9 @@ package constraints
 
 import (
 	"go/ast"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -76,6 +78,63 @@ func TestOutboundHTTPUsesNewRequestWithContext(t *testing.T) {
 			t,
 			"outbound HTTP must use http.NewRequestWithContext",
 			"construct outbound requests with http.NewRequestWithContext so cancellation and request deadlines continue into downstream calls.",
+			violations,
+		)
+	}
+}
+
+func TestPostgresRepositoriesUseSQLCGeneratedQueries(t *testing.T) {
+	repoRoot := findRepoRoot(t)
+	postgresRoot := filepath.Join(repoRoot, "internal", "infra", "store", "postgres")
+	var violations []string
+
+	err := filepath.WalkDir(postgresRoot, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if d.Name() == "sqlc" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+
+		file, fset, err := parseFile(path)
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(repoRoot, path)
+		if err != nil {
+			return err
+		}
+		violations = append(
+			violations,
+			selectorCallViolations(
+				filepath.ToSlash(relPath),
+				file,
+				fset,
+				"database/sql",
+				map[string]struct{}{
+					"ExecContext":     {},
+					"QueryContext":    {},
+					"QueryRowContext": {},
+					"PrepareContext":  {},
+				},
+			)...,
+		)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walk postgres root: %v", err)
+	}
+	if len(violations) != 0 {
+		failWithGuidance(
+			t,
+			"postgres repositories must execute SQL through generated sqlc queries",
+			"move repository SQL into app/db/queries/*.sql, regenerate app/internal/infra/store/postgres/sqlc, and keep non-generated repository files limited to domain mapping, trace, and error translation.",
 			violations,
 		)
 	}

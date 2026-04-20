@@ -6,8 +6,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -35,8 +37,8 @@ func TestExampleRepositoryIntegrationCRUD(t *testing.T) {
 		_ = db.Close()
 	})
 
-	if err := applyExampleMigration(ctx, db); err != nil {
-		t.Fatalf("applyExampleMigration() error = %v", err)
+	if err := applyAllMigrations(ctx, db); err != nil {
+		t.Fatalf("applyAllMigrations() error = %v", err)
 	}
 	if _, err := db.ExecContext(ctx, `TRUNCATE TABLE examples`); err != nil {
 		t.Fatalf("truncate examples: %v", err)
@@ -80,13 +82,32 @@ func TestExampleRepositoryIntegrationCRUD(t *testing.T) {
 	}
 }
 
-func applyExampleMigration(ctx context.Context, db interface {
+func applyAllMigrations(ctx context.Context, db interface {
 	ExecContext(context.Context, string, ...any) (sql.Result, error)
 }) error {
-	content, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "db", "migrations", "001_init.sql"))
+	root := filepath.Join("..", "..", "..", "..", "db", "migrations")
+	entries, err := os.ReadDir(root)
 	if err != nil {
 		return err
 	}
-	_, err = db.ExecContext(ctx, string(content))
-	return err
+
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".sql" {
+			continue
+		}
+		names = append(names, entry.Name())
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		content, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil {
+			return err
+		}
+		if _, err := db.ExecContext(ctx, string(content)); err != nil {
+			return &fs.PathError{Op: "exec migration", Path: name, Err: err}
+		}
+	}
+	return nil
 }

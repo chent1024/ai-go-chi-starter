@@ -26,6 +26,8 @@
 - 不要随意新建 `app/internal/*`、`app/internal/runtime/*` 或 `app/internal/transport/httpapi/*` 的新目录；新增这类稳定子域前，必须先补 `docs/app/architecture.md`、本文件，以及对应 repo rules / arch rules
 - 生产代码里的 `context.Background()` / `context.TODO()` 只允许留在顶层入口和 runtime 内部；service / infra / transport / worker 必须继续传递调用方 context
 - PostgreSQL 访问必须使用 context 版本 API；出站 HTTP 必须使用 `http.NewRequestWithContext`
+- PostgreSQL repository 默认通过 `app/db/queries/*.sql` + `sqlc` 生成查询；非生成的 `internal/infra/store/postgres` 代码只做领域映射、trace 和错误转换，不直接执行 SQL
+- starter 默认不要把“无上限全表列表查询”作为示例；列表 SQL 至少要带固定上限，后续真实业务再升级为分页
 - 只有 observability 子包可以定义 `LogField*` 常量；通用日志字段放 `app/internal/runtime/logging`，span 私有字段留在 `app/internal/runtime/tracing`
 - 改 API surface 时，必须同步 `docs/app/api.md`、`app/openapi/openapi.yaml` 和测试
 - 改配置时，必须同步 `deploy/.env.runtime.example`、`deploy/.env.dev.example`、`docs/app/config.md`
@@ -43,7 +45,7 @@
 
 - 新增 domain：看 `docs/app/recipes/add-domain.md`
 - 新增 HTTP 接口：沿用 `app/internal/transport/httpapi/v1/example_handler.go`
-- 新增 PostgreSQL repository：沿用 `app/internal/infra/store/postgres/example_repository.go`
+- 新增 PostgreSQL repository：先在 `app/db/queries/*.sql` 定义查询并执行 `make sqlc-generate`，再沿用 `app/internal/infra/store/postgres/example_repository.go` 的薄包装模式接入领域层
 - 新增错误码：沿用 `app/internal/service/<domain>/error_codes.go` 和 `docs/app/errors.md`
 - 新增横切日志能力：放 `app/internal/runtime/logging`
 - 新增 trace / request context / span 能力：放 `app/internal/runtime/tracing`
@@ -58,6 +60,7 @@
 - 不要在 `app/internal/service` 里 import `log/slog`
 - 不要在 handler 里直接访问数据库
 - 不要在 repository / store 里 import `internal/transport/*`
+- 不要在非生成的 `internal/infra/store/postgres` 代码里直接调用 `QueryContext`、`QueryRowContext`、`ExecContext` 或手写执行 SQL
 - 不要在 `app/internal/config` 之外直接读取 env
 - 不要新建 `app/internal/runtime/*.go` 根级文件
 - 不要 import `ai-go-chi-starter/internal/runtime` 根包

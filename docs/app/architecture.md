@@ -6,6 +6,7 @@
 - `app/internal/transport/httpapi`：只负责 HTTP 协议层和 middleware
 - `app/internal/service`：负责业务规则和领域服务
 - `app/internal/infra`：负责 PostgreSQL、outbound client 等具体适配器
+- PostgreSQL 查询默认定义在 `app/db/queries/*.sql`，由 `sqlc` 生成到 `app/internal/infra/store/postgres/sqlc`；repository 包装层只做领域映射、trace 和错误转换
 - `app/internal/runtime/logging`：负责 logger、bootstrap logger、redaction、outbound logging，以及按 `APP_TIMEZONE` 在本地零点主动切换每日文件日志
 - `app/internal/runtime/tracing`：负责 request id、trace、span 等横切链路能力
 - `app/internal/transport/httpapi/drain`：负责 HTTP graceful shutdown 期间的新请求拒绝状态
@@ -46,6 +47,8 @@
 ### Migrate
 
 `app/cmd/migrate` 负责加载配置、打开 PostgreSQL、获取 PostgreSQL advisory lock，并执行 `app/db/migrations` 下的 forward-only SQL 文件。
+
+`app/db/queries` 只存放业务查询 SQL，不存放 migration；migration 仍然只放在 `app/db/migrations`。
 
 ## HTTP 横切层
 
@@ -97,6 +100,6 @@
 
 - transport 负责 DTO 解码和编码
 - service 负责输入校验和 ID 生成
-- repository 负责 SQL 访问并返回领域模型
+- repository 负责通过 `sqlc` 生成查询访问 SQL，并返回领域模型；starter 默认列表查询应限制返回窗口，避免把全表扫描模式作为默认示例
 
 这样可以让 handler、service、repository 的职责保持稳定，也便于 Codex 在这个结构上继续扩展。

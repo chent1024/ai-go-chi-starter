@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	dbsqlc "ai-go-chi-starter/internal/infra/store/postgres/sqlc"
 	rttrace "ai-go-chi-starter/internal/runtime/tracing"
 	"ai-go-chi-starter/internal/service/example"
 	"ai-go-chi-starter/internal/service/shared"
@@ -13,12 +14,16 @@ import (
 )
 
 type ExampleRepository struct {
-	db     *sql.DB
+	store  *dbsqlc.Queries
 	logger *slog.Logger
 }
 
 func NewExampleRepository(db *sql.DB) *ExampleRepository {
-	return &ExampleRepository{db: db}
+	repo := &ExampleRepository{}
+	if db != nil {
+		repo.store = dbsqlc.New(db)
+	}
+	return repo
 }
 
 func (r *ExampleRepository) WithLogger(logger *slog.Logger) *ExampleRepository {
@@ -27,41 +32,34 @@ func (r *ExampleRepository) WithLogger(logger *slog.Logger) *ExampleRepository {
 }
 
 func (r *ExampleRepository) Create(ctx context.Context, item example.Example) (_ example.Example, err error) {
-	if r.db == nil {
+	if r.store == nil {
 		return example.Example{}, shared.ErrInternal("database is not configured")
 	}
 	spanCtx, span := rttrace.StartSpan(ctx, r.logger, "postgres.example.create")
 	defer func() {
 		span.End(err, "db.system", "postgres", "db.operation", "insert", "db.table", "examples")
 	}()
-	row := r.db.QueryRowContext(
-		spanCtx,
-		`INSERT INTO examples (id, name) VALUES ($1, $2)
-		 RETURNING id, name, created_at, updated_at`,
-		item.ID,
-		item.Name,
-	)
-	return scanExample(row)
+	row, err := r.store.CreateExample(spanCtx, dbsqlc.CreateExampleParams{
+		ID:   item.ID,
+		Name: item.Name,
+	})
+	if err != nil {
+		return example.Example{}, fmt.Errorf("create example: %w", err)
+	}
+	return toExample(row), nil
 }
 
 func (r *ExampleRepository) Get(ctx context.Context, id string) (_ example.Example, err error) {
-	if r.db == nil {
+	if r.store == nil {
 		return example.Example{}, shared.ErrInternal("database is not configured")
 	}
 	spanCtx, span := rttrace.StartSpan(ctx, r.logger, "postgres.example.get")
 	defer func() {
 		span.End(err, "db.system", "postgres", "db.operation", "select_one", "db.table", "examples")
 	}()
-	row := r.db.QueryRowContext(
-		spanCtx,
-		`SELECT id, name, created_at, updated_at
-		 FROM examples
-		 WHERE id = $1`,
-		id,
-	)
-	item, err := scanExample(row)
+	row, err := r.store.GetExample(spanCtx, id)
 	if err == nil {
-		return item, nil
+		return toExample(row), nil
 	}
 	if errors.Is(err, sql.ErrNoRows) {
 		return example.Example{}, example.ErrNotFound()
@@ -70,44 +68,29 @@ func (r *ExampleRepository) Get(ctx context.Context, id string) (_ example.Examp
 }
 
 func (r *ExampleRepository) List(ctx context.Context) (_ []example.Example, err error) {
-	if r.db == nil {
+	if r.store == nil {
 		return nil, shared.ErrInternal("database is not configured")
 	}
 	spanCtx, span := rttrace.StartSpan(ctx, r.logger, "postgres.example.list")
 	defer func() {
 		span.End(err, "db.system", "postgres", "db.operation", "select_many", "db.table", "examples")
 	}()
-	rows, err := r.db.QueryContext(
-		spanCtx,
-		`SELECT id, name, created_at, updated_at
-		 FROM examples
-		 ORDER BY created_at DESC, id DESC`,
-	)
+	rows, err := r.store.ListExamples(spanCtx)
 	if err != nil {
 		return nil, fmt.Errorf("list examples: %w", err)
 	}
-	defer rows.Close()
-
-	items := make([]example.Example, 0)
-	for rows.Next() {
-		var item example.Example
-		if err := rows.Scan(&item.ID, &item.Name, &item.CreatedAt, &item.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("scan example: %w", err)
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate examples: %w", err)
+	items := make([]example.Example, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, toExample(row))
 	}
 	return items, nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
-}
-
-func scanExample(source scanner) (example.Example, error) {
-	var item example.Example
-	err := source.Scan(&item.ID, &item.Name, &item.CreatedAt, &item.UpdatedAt)
-	return item, err
+func toExample(row dbsqlc.Example) example.Example {
+	return example.Example{
+		ID:        row.ID,
+		Name:      row.Name,
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+	}
 }
